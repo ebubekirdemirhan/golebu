@@ -140,13 +140,17 @@ export default function GuidePage() {
       {/* API Kurulumu */}
       <div className="bg-blue-900/20 border border-blue-500/30 rounded-2xl p-4">
         <h2 className="text-blue-300 font-bold mb-3 text-sm uppercase tracking-wider">🔧 Gerçek Veri için Kurulum</h2>
+        <p className="text-blue-400/80 text-xs mb-3">
+          Canlı maçlar ve API route’ları için site <strong className="text-white">Vercel</strong> üzerinde çalışmalıdır.
+          GitHub Pages yalnızca statik sayfa sunar; sunucu tarafı yoktur. Projede <code className="text-green-400">VERCEL.md</code> dosyasına bak.
+        </p>
         <div className="space-y-3">
           <div className="flex gap-3">
             <CheckCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-blue-200 text-sm font-medium">football-data.org API Key</p>
               <p className="text-blue-400/70 text-xs">Ücretsiz kayıt: football-data.org/client/register</p>
-              <code className="text-green-400 text-xs">.env.local → FOOTBALL_DATA_API_KEY=...</code>
+              <code className="text-green-400 text-xs">Vercel Env → FOOTBALL_DATA_API_KEY=...</code>
             </div>
           </div>
           <div className="flex gap-3">
@@ -154,7 +158,7 @@ export default function GuidePage() {
             <div>
               <p className="text-blue-200 text-sm font-medium">Google Gemini API Key (AI Asistan)</p>
               <p className="text-blue-400/70 text-xs">Ücretsiz: aistudio.google.com/app/apikey</p>
-              <code className="text-green-400 text-xs">.env.local → GEMINI_API_KEY=...</code>
+              <code className="text-green-400 text-xs">Vercel Env → GEMINI_API_KEY=...</code>
             </div>
           </div>
           <div className="flex gap-3">

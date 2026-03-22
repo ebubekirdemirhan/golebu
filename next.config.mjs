@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  basePath: '/golebu',
-  assetPrefix: '/golebu/',
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      { protocol: 'https', hostname: 'crests.football-data.org', pathname: '/**' },
+      { protocol: 'http', hostname: 'crests.football-data.org', pathname: '/**' },
+    ],
   },
-  trailingSlash: true,
 };
 
 export default nextConfig;

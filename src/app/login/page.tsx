@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
@@ -19,23 +20,21 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    await new Promise(r => setTimeout(r, 1000));
+    const res = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
 
-    const demoUsers = [
-      { email: 'test@golebu.com', password: 'test123', name: 'Test Kullanıcı' },
-      { email: 'uye@golebu.com', password: 'uye123', name: 'Üye' },
-    ];
-
-    const user = demoUsers.find(u => u.email === email && u.password === password);
-
-    if (user) {
-      setSuccess(true);
-      localStorage.setItem('golebu_user', JSON.stringify({ name: user.name, email: user.email, role: user.email.includes('test') ? 'premium' : 'free' }));
-      setTimeout(() => router.push('/'), 1500);
-    } else {
-      setError('Email veya şifre hatalı. Demo: test@golebu.com / test123');
-    }
     setLoading(false);
+
+    if (res?.error) {
+      setError('Email veya şifre hatalı. Demo: test@golebu.com / test123');
+      return;
+    }
+
+    setSuccess(true);
+    setTimeout(() => router.push('/'), 800);
   };
 
   return (
@@ -75,6 +74,7 @@ export default function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder="Email adresi"
               required
+              autoComplete="email"
               className="w-full bg-[#13132a] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-600 text-sm outline-none focus:border-green-500/50 transition-colors"
             />
           </div>
@@ -87,6 +87,7 @@ export default function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               placeholder="Şifre"
               required
+              autoComplete="current-password"
               className="w-full bg-[#13132a] border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white placeholder-gray-600 text-sm outline-none focus:border-green-500/50 transition-colors"
             />
             <button

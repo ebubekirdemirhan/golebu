@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { Home, Trophy, BookOpen, MessageCircle, LogIn, LogOut, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -13,34 +14,24 @@ const NAV_LINKS = [
   { href: '/guide', label: 'Rehber', icon: BookOpen },
 ];
 
-interface UserData {
-  name: string;
-  email: string;
-  role: string;
-}
-
 export default function Navbar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<UserData | null>(null);
+  const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem('golebu_user');
-    if (stored) {
-      try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
-    }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('golebu_user');
-    setUser(null);
-    window.location.href = '/golebu/';
+    signOut({ callbackUrl: '/' });
   };
+
+  const user = session?.user;
+  const isAuthed = Boolean(user);
 
   return (
     <>
-      {/* Desktop Navbar */}
       <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-b border-white/5">
         <div className="max-w-6xl mx-auto w-full px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -71,16 +62,17 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            {mounted && user ? (
+            {mounted && status !== 'loading' && isAuthed ? (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
                   <User className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-300">{user.name}</span>
-                  {user.role === 'premium' && (
+                  <span className="text-sm text-gray-300">{user?.name}</span>
+                  {user?.role === 'premium' && (
                     <span className="bg-purple-500/20 text-purple-400 text-xs px-2 py-0.5 rounded-full">Premium</span>
                   )}
                 </div>
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                 >
@@ -100,7 +92,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-t border-white/5">
         <div className="flex items-center justify-around h-16 px-2">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => (
@@ -116,8 +107,9 @@ export default function Navbar() {
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           ))}
-          {mounted && user ? (
+          {mounted && status !== 'loading' && isAuthed ? (
             <button
+              type="button"
               onClick={handleLogout}
               className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-gray-500"
             >
@@ -136,7 +128,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Top Bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-b border-white/5">
         <div className="flex items-center justify-between px-4 h-14">
           <Link href="/" className="flex items-center gap-2">
@@ -147,8 +138,8 @@ export default function Navbar() {
               GOL<span className="text-green-400">EBU</span>
             </span>
           </Link>
-          {mounted && user ? (
-            <span className="text-xs text-gray-400">{user.name.split(' ')[0]}</span>
+          {mounted && status !== 'loading' && isAuthed ? (
+            <span className="text-xs text-gray-400">{user?.name?.split(' ')[0]}</span>
           ) : (
             <Link href="/login" className="text-xs text-green-400 font-semibold">Giriş Yap</Link>
           )}

@@ -5,6 +5,7 @@ import AnalysisCard from './AnalysisCard';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Lock, Crown } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface Props {
   analyses: Analysis[];
@@ -15,20 +16,15 @@ const FREE_LIMIT = 2;
 const LEAGUE_FILTERS = ['Tümü', 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1', 'Champions League'];
 
 export default function MatchesSection({ analyses }: Props) {
+  const { data: session, status } = useSession();
   const [filter, setFilter] = useState('Tümü');
-  const [isPremium, setIsPremium] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem('golebu_user');
-    if (stored) {
-      try {
-        const user = JSON.parse(stored);
-        setIsPremium(user.role === 'premium');
-      } catch { /* ignore */ }
-    }
   }, []);
+
+  const isPremium = session?.user?.role === 'premium';
 
   const filtered = filter === 'Tümü'
     ? analyses
@@ -39,6 +35,7 @@ export default function MatchesSection({ analyses }: Props) {
       <div className="text-center py-16">
         <span className="text-4xl mb-4 block">⚽</span>
         <p className="text-gray-400">Bugün analiz edilecek maç bulunamadı.</p>
+        <p className="text-gray-500 text-xs mt-2">football-data.org anahtarı ekli mi ve bugün desteklenen liglerde maç var mı kontrol et.</p>
       </div>
     );
   }
@@ -64,14 +61,14 @@ export default function MatchesSection({ analyses }: Props) {
       <p className="text-gray-500 text-xs mb-4">
         {filtered.length} analiz gösteriliyor
         {filter !== 'Tümü' && ` • ${filter}`}
-        {mounted && !isPremium && filtered.length > FREE_LIMIT && (
+        {mounted && status !== 'loading' && !isPremium && filtered.length > FREE_LIMIT && (
           <span className="text-purple-400 ml-1">• {FREE_LIMIT} ücretsiz, geri kalanı Premium</span>
         )}
       </p>
 
       <div className="space-y-4">
         {filtered.map((analysis, index) => {
-          const isLocked = mounted && !isPremium && index >= FREE_LIMIT;
+          const isLocked = mounted && status !== 'loading' && !isPremium && index >= FREE_LIMIT;
 
           if (isLocked) {
             return (

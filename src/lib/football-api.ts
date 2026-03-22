@@ -19,7 +19,7 @@ async function fetchWithCache<T>(endpoint: string, ttlMinutes = 30): Promise<T> 
     headers: {
       'X-Auth-Token': API_KEY,
     },
-    next: { revalidate: ttlMinutes * 60 },
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -51,9 +51,12 @@ export const SUPPORTED_LEAGUES = [
 ];
 
 export async function getTodayMatches(): Promise<Match[]> {
+  if (!API_KEY || API_KEY === 'your_football_data_api_key_here') {
+    return [];
+  }
   const today = new Date().toISOString().split('T')[0];
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-  
+
   try {
     const data = await fetchWithCache<{ matches: Match[] }>(
       `/matches?dateFrom=${today}&dateTo=${tomorrow}&status=SCHEDULED,LIVE,IN_PLAY`,
@@ -61,11 +64,14 @@ export async function getTodayMatches(): Promise<Match[]> {
     );
     return data.matches || [];
   } catch {
-    return getMockMatches();
+    return [];
   }
 }
 
 export async function getMatchesByDate(dateFrom: string, dateTo: string): Promise<Match[]> {
+  if (!API_KEY || API_KEY === 'your_football_data_api_key_here') {
+    return [];
+  }
   try {
     const data = await fetchWithCache<{ matches: Match[] }>(
       `/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`,
@@ -73,7 +79,7 @@ export async function getMatchesByDate(dateFrom: string, dateTo: string): Promis
     );
     return data.matches || [];
   } catch {
-    return getMockMatches();
+    return [];
   }
 }
 

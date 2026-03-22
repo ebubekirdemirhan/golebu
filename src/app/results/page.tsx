@@ -1,12 +1,29 @@
 'use client';
 
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import StatsOverview from '@/components/layout/StatsOverview';
-import { getStaticResults, getStaticStats } from '@/lib/static-data';
 import { useState, useEffect } from 'react';
+import type { OverallStats } from '@/lib/types';
 
-const results = getStaticResults();
-const stats = getStaticStats();
+type ResultRow = {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  competition: string;
+  utcDate: string;
+  actualScore: { home: number; away: number };
+  predictions: {
+    winner: string;
+    winnerHit: boolean;
+    over25: number;
+    over25Hit: boolean;
+    btts: number;
+    bttsHit: boolean;
+    hy05: number;
+    hy05Hit: boolean;
+  };
+  note?: string;
+};
 
 function HitBadge({ hit }: { hit: boolean }) {
   return hit ? (
@@ -24,10 +41,43 @@ function formatDate(utcDate: string): string {
 
 export default function ResultsPage() {
   const [mounted, setMounted] = useState(false);
+  const [results, setResults] = useState<ResultRow[]>([]);
+  const [stats, setStats] = useState<OverallStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [demo, setDemo] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/results');
+        const data = await res.json();
+        if (cancelled) return;
+        setResults(data.results ?? []);
+        setStats(data.stats ?? null);
+        setDemo(Boolean(data.demo));
+        if (data.message) setMessage(data.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading || !stats) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-6 flex justify-center py-20">
+        <Loader2 className="w-8 h-8 text-green-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -35,7 +85,11 @@ export default function ResultsPage() {
         <h1 className="text-2xl font-black text-white mb-1">
           📊 Sonuç <span className="gradient-text">Takibi</span>
         </h1>
-        <p className="text-gray-400 text-sm">Geçmiş tahminler ve doğruluk oranları</p>
+        <p className="text-gray-400 text-sm">Geçmiş maçlar ve tahmin özeti</p>
+        {demo && (
+          <p className="text-blue-400/80 text-xs mt-2">Örnek veri — API ile canlı sonuçlar gelince güncellenir.</p>
+        )}
+        {message && <p className="text-gray-500 text-xs mt-2">{message}</p>}
       </div>
 
       <StatsOverview stats={stats} />

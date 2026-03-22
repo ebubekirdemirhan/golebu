@@ -1,0 +1,32 @@
+================================================================================
+  VERCEL ORTAM DEĞİŞKENLERİ — SENİN YERİNE HAZIRLANDI
+================================================================================
+
+Ben (Cursor) senin bilgisayarında şu dosyayı oluşturdum:
+
+  📁 gollazim klasörü içinde →  vercel-env-import.env
+
+Bu dosyada şunlar var (production için):
+  • FOOTBALL_DATA_API_KEY
+  • GEMINI_API_KEY
+  • NEXTAUTH_SECRET  (yeni, güçlü rastgele değer)
+  • NEXTAUTH_URL = https://golebu.vercel.app
+
+--------------------------------------------------------------------------------
+ŞİMDİ SEN SADECE 3 TIK YAP:
+--------------------------------------------------------------------------------
+
+1) Tarayıcıda Vercel → projen "golebu" → Settings → Environment Variables
+
+2) Sayfada "Import .env" veya "Import" butonunu bul (ekranda gördüğün modalda altta var)
+
+3) Bilgisayardan şu dosyayı seç:
+   C:\Users\ebu\Desktop\gollazim\vercel-env-import.env
+
+4) Import tamamlanınca: Deployments → en üstteki deployment → ⋯ → Redeploy
+
+--------------------------------------------------------------------------------
+NOT: Bu dosya .gitignore ile Git'e gitmez; sadece senin PC'de kalır.
+     Anahtarları daha önce sohbette paylaştıysan, ileride football-data / Google
+     tarafında token yenilemek iyi olur.
+================================================================================

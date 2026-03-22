@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { ChatMessage } from '@/lib/types';
-import { getDemoAIResponse } from '@/lib/static-data';
 
 const SUGGESTED_QUESTIONS = [
   '2.5 Gol Üstü nasıl hesaplanır?',
@@ -16,6 +15,9 @@ const SUGGESTED_QUESTIONS = [
 export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -25,9 +27,6 @@ export default function AssistantPage() {
       timestamp: new Date(),
     }]);
   }, []);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,17 +40,28 @@ export default function AssistantPage() {
     setInput('');
     setLoading(true);
 
-    // Kisa gecikme ekle (dogal hissettirmek icin)
-    await new Promise(r => setTimeout(r, 800));
-
-    const response = getDemoAIResponse(text);
-    const botMsg: ChatMessage = {
-      role: 'assistant',
-      content: response,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, botMsg]);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      const botMsg: ChatMessage = {
+        role: 'assistant',
+        content: data.response ?? 'Yanıt alınamadı.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, botMsg]);
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Bağlantı hatası. Tekrar dene.',
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,6 +127,7 @@ export default function AssistantPage() {
             {SUGGESTED_QUESTIONS.map((q, i) => (
               <button
                 key={i}
+                type="button"
                 onClick={() => sendMessage(q)}
                 className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-full border border-white/10 transition-colors"
               >
@@ -137,6 +148,7 @@ export default function AssistantPage() {
           className="flex-1 bg-[#13132a] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none focus:border-green-500/50 transition-colors"
         />
         <button
+          type="button"
           onClick={() => sendMessage(input)}
           disabled={!input.trim() || loading}
           className="w-12 h-12 bg-green-500 hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-colors"
