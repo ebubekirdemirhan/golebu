@@ -7,11 +7,11 @@ import { SessionProvider } from '@/components/providers/SessionProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'GolLazım - AI Destekli Futbol Analiz Platformu',
+  title: 'GolEbu - AI Destekli Futbol Analiz Platformu',
   description: 'Yapay zeka destekli futbol maç analizleri, tahminler ve istatistikler. 2.5 Gol Üstü, KG Var, İY 0.5 Üst tahminleri.',
   keywords: 'futbol analiz, maç tahmini, 2.5 gol üstü, kg var, iddaa analiz, yapay zeka futbol',
   openGraph: {
-    title: 'GolLazım - AI Futbol Analiz',
+    title: 'GolEbu - AI Futbol Analiz',
     description: 'Veri odaklı futbol tahminleri. %65+ eşik sistemi.',
     type: 'website',
   },

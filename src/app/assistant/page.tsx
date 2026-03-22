@@ -16,7 +16,7 @@ export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: '⚽ Merhaba! Ben GolLazım\'ın AI analiz asistanıyım.\n\nFutbol tahminleri, istatistikler ve analiz sistemi hakkında sorularını yanıtlayabilirim. Ne öğrenmek istersin? 🎯',
+      content: '⚽ Merhaba! Ben GolEbu\'nun AI analiz asistanıyım.\n\nFutbol tahminleri, istatistikler ve analiz sistemi hakkında sorularını yanıtlayabilirim. Ne öğrenmek istersin? 🎯',
       timestamp: new Date(),
     },
   ]);

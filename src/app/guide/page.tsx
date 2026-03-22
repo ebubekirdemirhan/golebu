@@ -38,7 +38,7 @@ export default function GuidePage() {
         <h1 className="text-2xl font-black text-white mb-1">
           📊 Analiz Kartı <span className="gradient-text">Rehberi</span>
         </h1>
-        <p className="text-gray-400 text-sm">GolLazım analiz kartlarını nasıl okuyacağını öğren</p>
+        <p className="text-gray-400 text-sm">GolEbu analiz kartlarını nasıl okuyacağını öğren</p>
       </div>
 
       {/* Renk Sistemi */}
@@ -89,6 +89,29 @@ export default function GuidePage() {
               <div>
                 <p className="text-white text-sm font-medium">{s.title}</p>
                 <p className="text-gray-400 text-xs">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Premium vs Ücretsiz */}
+      <div className="bg-[#13132a] border border-purple-500/20 rounded-2xl p-4 mb-4">
+        <h2 className="text-white font-bold mb-3 text-sm uppercase tracking-wider">👑 Premium vs Ücretsiz</h2>
+        <div className="space-y-2">
+          {[
+            { feature: 'Günlük analiz kartı limiti', free: '2 maç', premium: 'Sınırsız', highlight: true },
+            { feature: 'Value Bet fırsatları', free: 'Gizli', premium: 'Tam erişim', highlight: true },
+            { feature: 'Gol trend grafiği', free: 'Görünür', premium: 'Görünür', highlight: false },
+            { feature: 'AI Asistan sohbet', free: '5 mesaj/gün', premium: 'Sınırsız', highlight: true },
+            { feature: 'Sonuç takibi', free: 'Görünür', premium: 'Detaylı rapor', highlight: false },
+            { feature: 'Güven skoru detayı', free: 'Sadece seviye', premium: 'Tam analiz notu', highlight: true },
+          ].map((row, i) => (
+            <div key={i} className={`flex items-center justify-between rounded-lg p-3 ${row.highlight ? 'bg-purple-900/10 border border-purple-500/10' : 'bg-[#1a1a35]'}`}>
+              <span className="text-gray-300 text-sm">{row.feature}</span>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-gray-500 w-20 text-right">{row.free}</span>
+                <span className="text-purple-400 font-semibold w-24 text-right">{row.premium}</span>
               </div>
             </div>
           ))}

@@ -24,10 +24,10 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-full border-2 border-green-400 bg-[#1a1a35] flex items-center justify-center">
-              <span className="text-white font-black text-[8px] leading-none text-center">GOL<br/>LAZIM</span>
+              <span className="text-white font-black text-[8px] leading-none text-center">GOL<br/>EBU</span>
             </div>
             <span className="text-white font-black text-xl">
-              GOL<span className="text-green-400">LAZIM</span>
+              GOL<span className="text-green-400">EBU</span>
             </span>
           </Link>
 
@@ -122,10 +122,10 @@ export default function Navbar() {
         <div className="flex items-center justify-between px-4 h-14">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full border-2 border-green-400 bg-[#1a1a35] flex items-center justify-center">
-              <span className="text-white font-black text-[7px] leading-none text-center">GOL<br/>LAZIM</span>
+              <span className="text-white font-black text-[7px] leading-none text-center">GOL<br/>EBU</span>
             </div>
             <span className="text-white font-black text-lg">
-              GOL<span className="text-green-400">LAZIM</span>
+              GOL<span className="text-green-400">EBU</span>
             </span>
           </Link>
           {session ? (

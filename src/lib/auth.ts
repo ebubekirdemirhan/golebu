@@ -16,8 +16,8 @@ export const authOptions: NextAuthOptions = {
 
         // Demo mod: test kullanıcıları
         const demoUsers = [
-          { id: '1', email: 'test@gollazim.com', password: 'test123', name: 'Test Kullanıcı', role: 'premium' },
-          { id: '2', email: 'uye@gollazim.com', password: 'uye123', name: 'Üye', role: 'free' },
+          { id: '1', email: 'test@golebu.com', password: 'test123', name: 'Test Kullanıcı', role: 'premium' },
+          { id: '2', email: 'uye@golebu.com', password: 'uye123', name: 'Üye', role: 'free' },
         ];
 
         const user = demoUsers.find(

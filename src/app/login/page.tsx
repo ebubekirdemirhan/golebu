@@ -27,7 +27,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Email veya şifre hatalı. Demo: test@gollazim.com / test123');
+        setError('Email veya şifre hatalı. Demo: test@golebu.com / test123');
       } else {
         router.push('/');
         router.refresh();
@@ -45,7 +45,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full border-2 border-green-400 bg-[#1a1a35] flex items-center justify-center mx-auto mb-3 shadow-lg shadow-green-400/20">
-            <span className="text-white font-black text-xs leading-none text-center">GOL<br/>LAZIM</span>
+            <span className="text-white font-black text-xs leading-none text-center">GOL<br/>EBU</span>
           </div>
           <h1 className="text-2xl font-black text-white">
             HOŞ GEL<span className="text-green-400">DİN</span>
@@ -55,10 +55,10 @@ export default function LoginPage() {
 
         {/* Demo info */}
         <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-3 mb-4">
-          <p className="text-blue-300 text-xs font-medium mb-1">Demo Hesapları</p>
+            <p className="text-blue-300 text-xs font-medium mb-1">Demo Hesapları</p>
           <div className="space-y-1">
-            <p className="text-blue-400/70 text-xs">Premium: <code>test@gollazim.com</code> / <code>test123</code></p>
-            <p className="text-blue-400/70 text-xs">Ücretsiz: <code>uye@gollazim.com</code> / <code>uye123</code></p>
+            <p className="text-blue-400/70 text-xs">Premium: <code>test@golebu.com</code> / <code>test123</code></p>
+            <p className="text-blue-400/70 text-xs">Ücretsiz: <code>uye@golebu.com</code> / <code>uye123</code></p>
           </div>
         </div>
 

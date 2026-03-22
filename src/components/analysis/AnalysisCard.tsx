@@ -48,7 +48,7 @@ export default function AnalysisCard({ analysis, showTrend = true }: Props) {
 
         <div className="mx-4 flex items-center justify-center">
           <div className="w-14 h-14 rounded-full border-2 border-green-400 bg-[#1a1a35] flex items-center justify-center shadow-lg shadow-green-400/20">
-            <span className="text-white font-bold text-xs text-center leading-tight">GOL<br/>LAZIM</span>
+            <span className="text-white font-bold text-xs text-center leading-tight">GOL<br/>EBU</span>
           </div>
         </div>
 

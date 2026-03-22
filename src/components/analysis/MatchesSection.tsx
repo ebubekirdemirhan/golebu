@@ -3,16 +3,25 @@
 import { Analysis, Match } from '@/lib/types';
 import AnalysisCard from './AnalysisCard';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { Lock, Crown } from 'lucide-react';
 
 interface Props {
   analyses: Analysis[];
   matches?: Match[];
 }
 
+const FREE_LIMIT = 2;
+
 const LEAGUE_FILTERS = ['Tümü', 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1', 'Champions League'];
 
 export default function MatchesSection({ analyses }: Props) {
   const [filter, setFilter] = useState('Tümü');
+  const { data: session } = useSession();
+  
+  const userRole = (session?.user as { role?: string })?.role || 'free';
+  const isPremium = userRole === 'premium';
 
   const filtered = filter === 'Tümü'
     ? analyses
@@ -51,15 +60,46 @@ export default function MatchesSection({ analyses }: Props) {
       <p className="text-gray-500 text-xs mb-4">
         {filtered.length} analiz gösteriliyor
         {filter !== 'Tümü' && ` • ${filter}`}
+        {!isPremium && filtered.length > FREE_LIMIT && (
+          <span className="text-purple-400 ml-1">• {FREE_LIMIT} ücretsiz, geri kalanı Premium</span>
+        )}
       </p>
 
       {/* Kartlar */}
       <div className="space-y-4">
-        {filtered.map((analysis) => (
-          <div key={analysis.matchId} className="analysis-card">
-            <AnalysisCard analysis={analysis} showTrend={true} />
-          </div>
-        ))}
+        {filtered.map((analysis, index) => {
+          const isLocked = !isPremium && index >= FREE_LIMIT;
+          
+          if (isLocked) {
+            return (
+              <div key={analysis.matchId} className="relative">
+                <div className="blur-sm pointer-events-none select-none">
+                  <AnalysisCard analysis={analysis} showTrend={false} />
+                </div>
+                <div className="absolute inset-0 bg-[#0a0a1a]/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center">
+                  <div className="text-center">
+                    <Lock className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                    <p className="text-white font-bold text-sm mb-1">Premium Analiz</p>
+                    <p className="text-gray-400 text-xs mb-3">Bu analizi görmek için giriş yapın</p>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg transition-colors"
+                    >
+                      <Crown className="w-3.5 h-3.5" />
+                      Giriş Yap / Kayıt Ol
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          
+          return (
+            <div key={analysis.matchId} className="analysis-card">
+              <AnalysisCard analysis={analysis} showTrend={true} />
+            </div>
+          );
+        })}
       </div>
 
       {filtered.length === 0 && (
