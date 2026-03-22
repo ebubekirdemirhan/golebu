@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0a0a1a;
+  --bg-card: #13132a;
+  --bg-card-inner: #1a1a35;
+  --border: rgba(255, 255, 255, 0.05);
+  --green: #4ade80;
+  --orange: #fb923c;
+  --red: #f87171;
+  --purple: #a78bfa;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--bg-primary);
+  color: white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a4a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5a;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, opacity;
+  transition-duration: 150ms;
+}
+
+/* Card hover effect */
+.analysis-card:hover {
+  transform: translateY(-2px);
+  transition: transform 200ms ease;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #4ade80, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+.glow-green {
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.1);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.1);
+}
+
+/* Loading animation */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Scrollbar in chat */
+.chat-scroll::-webkit-scrollbar {
+  width: 4px;
+}
