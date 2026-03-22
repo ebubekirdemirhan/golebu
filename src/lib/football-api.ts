@@ -55,11 +55,12 @@ export async function getTodayMatches(): Promise<Match[]> {
     return [];
   }
   const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  // Ücretsiz planda bugün boş olabiliyor — önümüzdeki 7 günü tara
+  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 
   try {
     const data = await fetchWithCache<{ matches: Match[] }>(
-      `/matches?dateFrom=${today}&dateTo=${tomorrow}&status=SCHEDULED,LIVE,IN_PLAY`,
+      `/matches?dateFrom=${today}&dateTo=${weekEnd}&status=SCHEDULED,LIVE,IN_PLAY`,
       15
     );
     return data.matches || [];

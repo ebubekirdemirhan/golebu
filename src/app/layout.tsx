@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: 'Yapay zeka destekli futbol maç analizleri, tahminler ve istatistikler.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: {

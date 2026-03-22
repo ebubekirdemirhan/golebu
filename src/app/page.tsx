@@ -26,7 +26,9 @@ export default function HomePage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/matches');
+        const res = await fetch(`/api/matches?t=${Date.now()}`, {
+          cache: 'no-store',
+        });
         const data = await res.json();
         if (cancelled) return;
         setAnalyses(data.analyses ?? []);

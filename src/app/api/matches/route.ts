@@ -12,7 +12,7 @@ import type { Analysis, Match, OverallStats } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 const SUPPORTED_CODES = new Set(SUPPORTED_LEAGUES.map((l) => l.code));
-const MAX_MATCHES = 5;
+const MAX_MATCHES = 8;
 
 function hasApiKey(): boolean {
   const k = process.env.FOOTBALL_DATA_API_KEY;
