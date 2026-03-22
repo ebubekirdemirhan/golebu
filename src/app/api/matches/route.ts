@@ -13,8 +13,11 @@ import type { Analysis, Match, OverallStats } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-/** Toplam kart; API-Football için ayrılan minimum slot: mergeWithReservedSecondarySlots */
-const MAX_MATCHES = 15;
+/**
+ * İki kaynak birleşince üst sınır (football-data + API-Football).
+ * Çok yükseltmek football-data dakika kotasını (ücretsiz plan) zorlayabilir.
+ */
+const MAX_MATCHES = 20;
 
 function hasFootballDataKey(): boolean {
   const k = process.env.FOOTBALL_DATA_API_KEY;
@@ -86,7 +89,8 @@ export async function GET() {
     secondary = await getApiFootballMatchesInRange(today, weekEnd);
   }
 
-  let merged = mergeWithReservedSecondarySlots(primary, secondary, MAX_MATCHES, 5);
+  /* İkincil kaynağa en fazla 8 slot (API-F körfez/Türkiye maçları görünsün) */
+  let merged = mergeWithReservedSecondarySlots(primary, secondary, MAX_MATCHES, 8);
   merged = merged.filter(
     (m) =>
       m.dataSource === 'api-football' ||

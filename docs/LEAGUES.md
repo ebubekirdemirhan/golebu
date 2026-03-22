@@ -7,7 +7,7 @@
 | **football-data.org** | Birincil: geniş Avrupa/dünya ligleri, `getTeamMatches` ile son maç istatistiği | [`src/lib/football-api.ts`](../src/lib/football-api.ts) |
 | **API-Football (api-sports.io)** | İkincil: fikstür (TFF 1–2, Suudi, BAE, Katar vb.); kartta **tahmini** analiz | [`src/lib/api-football.ts`](../src/lib/api-football.ts) |
 
-İki kaynak önce [`mergeMatchesPrimaryWins`](../src/lib/match-merge.ts) ile dedupe edilir; ardından [`mergeWithReservedSecondarySlots`](../src/lib/match-merge.ts) ile toplam 15 kartta **en az 5 slot API-Football** için ayrılır (büyük ligler listeyi doldurmasın diye).
+İki kaynak önce [`mergeMatchesPrimaryWins`](../src/lib/match-merge.ts) ile dedupe edilir; ardından [`mergeWithReservedSecondarySlots`](../src/lib/match-merge.ts) ile toplam **en fazla 20** kartta **en fazla 8 slot API-Football** için ayrılır (büyük ligler listeyi doldurmasın diye).
 
 ## football-data.org
 

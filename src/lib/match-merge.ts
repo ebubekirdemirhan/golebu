@@ -44,7 +44,7 @@ export function mergeMatchesPrimaryWins(primary: Match[], secondary: Match[]): M
   return [...prim, ...sec];
 }
 
-const MAX_SECONDARY_DEFAULT = 5;
+const MAX_SECONDARY_DEFAULT = 8;
 
 /**
  * İkincil kaynağa en az slot ayırır: API-Football (Suudi, TFF, Süper Lig yedek vb.) her zaman görünür kalır.
