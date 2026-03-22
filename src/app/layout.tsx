@@ -13,6 +13,18 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
+/** CSS dosyası engellenirse bile layout bozulmasın: nav çiftlenmesi + beyaz ekran */
+const criticalCss = `
+  body{background-color:#0a0a1a!important;color:#fff!important;margin:0;}
+  main{min-height:100vh;padding-top:3.5rem;padding-bottom:5rem;}
+  @media(min-width:768px){
+    [data-nav="mobile-bottom"],[data-nav="mobile-top"]{display:none!important;}
+  }
+  @media(max-width:767px){
+    [data-nav="desktop"]{display:none!important;}
+  }
+`;
+
 export default function RootLayout({
   children,
 }: {
@@ -20,6 +32,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr" className="dark">
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: criticalCss }} />
+      </head>
       <body className={`${inter.className} bg-[#0a0a1a] text-white antialiased`}>
         <SessionProvider>
           <Navbar />

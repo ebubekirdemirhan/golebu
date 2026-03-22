@@ -32,6 +32,12 @@ Env ekledikten sonra **Deployments → Redeploy** (veya boş commit push).
 - **GitHub Pages:** Sadece statik site; API yok → sahte veri.
 - **Vercel:** Next.js API route’ları çalışır → `football-data.org`, isteğe bağlı `API-Football`, Gemini, NextAuth kullanılabilir.
 
+## Sayfa “düz HTML”, stiller yok, menü üçlü görünüyor
+
+- **Vercel → Settings → Build & Development:** **Output Directory boş** olmalı (`out` yazma). Framework: **Next.js**.
+- Tarayıcı: **Ctrl+Shift+R**, gizli sekme; reklam engelleyici bazen `/_next/static/*.css` dosyasını keser — dene veya devre dışı bırak.
+- Sunucu tarafı genelde doğru çalışır; sorun çoğunlukla **önbellek** veya **CSS dosyasının istemcide yüklenmemesi**. Son sürümde `layout` içine **inline kritik CSS** (koyu arka plan + mobil/masaüstü nav ayrımı) eklendi; yine de tam görünüm için Tailwind bundle’ının yüklenmesi gerekir.
+
 ## API-Football kota uyarısı
 
 - Ücretsiz anahtarda günlük istek sınırı küçüktür; ana sayfa her açılışta birden fazla lig için `/fixtures` çağırır.

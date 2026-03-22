@@ -32,7 +32,10 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-b border-white/5">
+      <nav
+        data-nav="desktop"
+        className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-b border-white/5"
+      >
         <div className="max-w-6xl mx-auto w-full px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-full border-2 border-green-400 bg-[#1a1a35] flex items-center justify-center">
@@ -92,7 +95,10 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-t border-white/5">
+      <nav
+        data-nav="mobile-bottom"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-t border-white/5"
+      >
         <div className="flex items-center justify-around h-16 px-2">
           {NAV_LINKS.map(({ href, label, icon: Icon }) => (
             <Link
@@ -128,7 +134,10 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-b border-white/5">
+      <div
+        data-nav="mobile-top"
+        className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a1a]/95 backdrop-blur-sm border-b border-white/5"
+      >
         <div className="flex items-center justify-between px-4 h-14">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full border-2 border-green-400 bg-[#1a1a35] flex items-center justify-center">
