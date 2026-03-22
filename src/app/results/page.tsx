@@ -1,9 +1,12 @@
 'use client';
 
 import { CheckCircle, XCircle } from 'lucide-react';
-import { formatMatchDate } from '@/lib/utils';
 import StatsOverview from '@/components/layout/StatsOverview';
 import { getStaticResults, getStaticStats } from '@/lib/static-data';
+import { useState, useEffect } from 'react';
+
+const results = getStaticResults();
+const stats = getStaticStats();
 
 function HitBadge({ hit }: { hit: boolean }) {
   return hit ? (
@@ -13,9 +16,18 @@ function HitBadge({ hit }: { hit: boolean }) {
   );
 }
 
+function formatDate(utcDate: string): string {
+  const date = new Date(utcDate);
+  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 export default function ResultsPage() {
-  const results = getStaticResults();
-  const stats = getStaticStats();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -42,7 +54,7 @@ export default function ResultsPage() {
                 <div className="text-2xl font-black text-white">
                   {result.actualScore.home} - {result.actualScore.away}
                 </div>
-                <p className="text-gray-500 text-xs">{formatMatchDate(result.utcDate)}</p>
+                <p className="text-gray-500 text-xs">{mounted ? formatDate(result.utcDate) : ''}</p>
               </div>
             </div>
 

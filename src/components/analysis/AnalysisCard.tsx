@@ -1,10 +1,11 @@
 'use client';
 
 import { Analysis } from '@/lib/types';
-import { formatMatchTime, getLeagueFlag } from '@/lib/utils';
+import { getLeagueFlag } from '@/lib/utils';
 import GoalTrend from './GoalTrend';
 import StatBadge from './StatBadge';
 import { Trophy, Diamond, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface Props {
   analysis: Analysis;
@@ -27,7 +28,12 @@ const confidenceBorder: Record<string, string> = {
 
 export default function AnalysisCard({ analysis, showTrend = true }: Props) {
   const flag = getLeagueFlag(analysis.competition.code);
-  const matchTime = formatMatchTime(analysis.utcDate);
+  const [matchTime, setMatchTime] = useState('');
+
+  useEffect(() => {
+    const date = new Date(analysis.utcDate);
+    setMatchTime(date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+  }, [analysis.utcDate]);
 
   return (
     <div className={`bg-[#13132a] rounded-2xl border ${confidenceBorder[analysis.confidence]} overflow-hidden`}>
