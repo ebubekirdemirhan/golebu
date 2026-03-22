@@ -40,7 +40,22 @@ export function getLeagueFlag(code: string): string {
     DED: '🇳🇱',
     BSA: '🇧🇷',
   };
-  return flags[code] || '⚽';
+  if (flags[code]) return flags[code];
+
+  const af = /^AF(\d+)$/.exec(code);
+  if (af) {
+    const id = parseInt(af[1], 10);
+    const byId: Record<number, string> = {
+      204: '🇹🇷',
+      205: '🇹🇷',
+      206: '🇹🇷',
+      307: '🇸🇦',
+      301: '🇦🇪',
+      233: '🇶🇦',
+    };
+    return byId[id] ?? '⚽';
+  }
+  return '⚽';
 }
 
 export function getResultColor(result: string): string {

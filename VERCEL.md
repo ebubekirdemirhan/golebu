@@ -10,7 +10,9 @@
 
 | Değişken | Açıklama |
 |----------|----------|
-| `FOOTBALL_DATA_API_KEY` | [football-data.org](https://www.football-data.org/client/register) ücretsiz anahtar — **canlı maçlar için zorunlu** |
+| `FOOTBALL_DATA_API_KEY` | [football-data.org](https://www.football-data.org/client/register) — **birincil** maç/analiz kaynağı (isteğe bağlı ama önerilir) |
+| `API_FOOTBALL_KEY` | [API-Football / api-sports.io](https://www.api-football.com/) — **ikincil** fikstür (TFF 1–2, Suudi, BAE, Katar). Ücretsiz planda **günlük düşük kota**; her sayfa yükünde lig başına istek gider. |
+| `API_FOOTBALL_LEAGUE_IDS` | (İsteğe bağlı) Virgülle lig ID’leri. Yoksa varsayılan: `205,206,307,301,233`. |
 | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) — AI asistan için |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` ile üret |
 | `NEXTAUTH_URL` | Production URL: `https://senin-proje.vercel.app` (custom domain varsa o) |
@@ -28,4 +30,10 @@ Env ekledikten sonra **Deployments → Redeploy** (veya boş commit push).
 ## GitHub Pages vs Vercel
 
 - **GitHub Pages:** Sadece statik site; API yok → sahte veri.
-- **Vercel:** Next.js API route’ları çalışır → `football-data.org`, Gemini, NextAuth kullanılabilir.
+- **Vercel:** Next.js API route’ları çalışır → `football-data.org`, isteğe bağlı `API-Football`, Gemini, NextAuth kullanılabilir.
+
+## API-Football kota uyarısı
+
+- Ücretsiz anahtarda günlük istek sınırı küçüktür; ana sayfa her açılışta birden fazla lig için `/fixtures` çağırır.
+- Kota bittiğinde ikincil kaynak boş döner; birincil (`FOOTBALL_DATA_API_KEY`) hâlâ çalışıyorsa o maçlar listelenir.
+- Detay: [docs/LEAGUES.md](docs/LEAGUES.md).

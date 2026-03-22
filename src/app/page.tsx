@@ -15,6 +15,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [sources, setSources] = useState<{
+    footballData: boolean;
+    apiFootball: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const d = new Date();
@@ -34,6 +38,7 @@ export default function HomePage() {
         setAnalyses(data.analyses ?? []);
         setStats(data.stats ?? null);
         setDemo(Boolean(data.demo));
+        if (data.sources) setSources(data.sources);
         if (data.message) setInfo(data.message);
       } catch {
         if (!cancelled) setError('Maç verisi alınamadı. Sayfayı yenile.');
@@ -60,6 +65,21 @@ export default function HomePage() {
       </div>
 
       <DemoBanner demo={demo} />
+
+      {sources && (sources.footballData || sources.apiFootball) && (
+        <p className="text-[11px] text-gray-500 mb-3 flex flex-wrap gap-x-2 gap-y-1 items-center">
+          <span className="text-gray-600">Aktif veri:</span>
+          {sources.footballData && (
+            <span className="px-2 py-0.5 rounded-md bg-white/5 text-gray-300">football-data</span>
+          )}
+          {sources.apiFootball && (
+            <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-200/90 border border-amber-500/25">
+              API-Football (Türkiye/Körfez ek ligi)
+            </span>
+          )}
+          <span className="text-gray-600 hidden sm:inline">— Lig filtrelerini sağa kaydırın (Süper Lig, TFF, Suudi…).</span>
+        </p>
+      )}
 
       {info && (
         <div className="mb-4 flex items-start gap-2 bg-blue-900/20 border border-blue-500/30 rounded-xl p-3">

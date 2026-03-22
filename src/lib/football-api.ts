@@ -1,4 +1,8 @@
 import { Match, TeamStats, MatchResult } from './types';
+import { SUPPORTED_LEAGUES } from './leagues.config';
+
+export { SUPPORTED_LEAGUES, SUPPORTED_LEAGUE_CODES } from './leagues.config';
+export type { LeagueEntry } from './leagues.config';
 
 const BASE_URL = 'https://api.football-data.org/v4';
 const API_KEY = process.env.FOOTBALL_DATA_API_KEY || '';
@@ -34,39 +38,36 @@ async function fetchWithCache<T>(endpoint: string, ttlMinutes = 30): Promise<T> 
   return data;
 }
 
-// Desteklenen ligler (football-data.org ücretsiz tier)
-export const SUPPORTED_LEAGUES = [
-  { code: 'PL', name: 'England - Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { code: 'PD', name: 'Spain - La Liga', flag: '🇪🇸' },
-  { code: 'BL1', name: 'Germany - Bundesliga', flag: '🇩🇪' },
-  { code: 'SA', name: 'Italy - Serie A', flag: '🇮🇹' },
-  { code: 'FL1', name: 'France - Ligue 1', flag: '🇫🇷' },
-  { code: 'CL', name: 'UEFA Champions League', flag: '🏆' },
-  { code: 'EL', name: 'UEFA Europa League', flag: '🏆' },
-  { code: 'EC', name: 'UEFA Euro', flag: '🇪🇺' },
-  { code: 'WC', name: 'FIFA World Cup', flag: '🌍' },
-  { code: 'PPL', name: 'Portugal - Primeira Liga', flag: '🇵🇹' },
-  { code: 'DED', name: 'Netherlands - Eredivisie', flag: '🇳🇱' },
-  { code: 'BSA', name: 'Brazil - Série A', flag: '🇧🇷' },
-];
+/** Önce competitions= ile hedef ligleri sor; hata/boşsa genel /matches ile dene */
+async function fetchMatchesForWeek(today: string, weekEnd: string): Promise<Match[]> {
+  const base = `dateFrom=${today}&dateTo=${weekEnd}&status=SCHEDULED,LIVE,IN_PLAY`;
+  const allCodes = SUPPORTED_LEAGUES.map((l) => l.code).join(',');
+
+  const attempts = [
+    `/matches?competitions=${allCodes}&${base}`,
+    `/matches?${base}`,
+  ];
+
+  for (const endpoint of attempts) {
+    try {
+      const data = await fetchWithCache<{ matches: Match[] }>(endpoint, 15);
+      const matches = data.matches || [];
+      if (matches.length > 0) return matches;
+    } catch {
+      continue;
+    }
+  }
+  return [];
+}
 
 export async function getTodayMatches(): Promise<Match[]> {
   if (!API_KEY || API_KEY === 'your_football_data_api_key_here') {
     return [];
   }
   const today = new Date().toISOString().split('T')[0];
-  // Ücretsiz planda bugün boş olabiliyor — önümüzdeki 7 günü tara
   const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 
-  try {
-    const data = await fetchWithCache<{ matches: Match[] }>(
-      `/matches?dateFrom=${today}&dateTo=${weekEnd}&status=SCHEDULED,LIVE,IN_PLAY`,
-      15
-    );
-    return data.matches || [];
-  } catch {
-    return [];
-  }
+  return fetchMatchesForWeek(today, weekEnd);
 }
 
 export async function getMatchesByDate(dateFrom: string, dateTo: string): Promise<Match[]> {

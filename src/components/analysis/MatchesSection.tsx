@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Lock, Crown } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { ALL_LEAGUE_FILTERS } from '@/lib/leagues.config';
 
 interface Props {
   analyses: Analysis[];
@@ -13,11 +14,15 @@ interface Props {
 
 const FREE_LIMIT = 2;
 
-const LEAGUE_FILTERS = ['Tümü', 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1', 'Champions League'];
+const LEAGUE_FILTERS = ['Tümü', ...ALL_LEAGUE_FILTERS.map((l) => l.filterLabel)];
+
+const FILTER_TO_CODE: Record<string, string> = Object.fromEntries(
+  ALL_LEAGUE_FILTERS.map((l) => [l.filterLabel, l.code])
+);
 
 export default function MatchesSection({ analyses }: Props) {
   const { data: session, status } = useSession();
-  const [filter, setFilter] = useState('Tümü');
+  const [filter, setFilter] = useState<string>('Tümü');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -26,9 +31,14 @@ export default function MatchesSection({ analyses }: Props) {
 
   const isPremium = session?.user?.role === 'premium';
 
-  const filtered = filter === 'Tümü'
-    ? analyses
-    : analyses.filter(a => a.competition.name.includes(filter));
+  const filtered =
+    filter === 'Tümü'
+      ? analyses
+      : analyses.filter((a) => {
+          const code = FILTER_TO_CODE[filter];
+          if (code) return a.competition.code === code;
+          return a.competition.name.includes(filter);
+        });
 
   if (analyses.length === 0) {
     return (
@@ -42,7 +52,8 @@ export default function MatchesSection({ analyses }: Props) {
 
   return (
     <div>
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+      <p className="text-[10px] text-gray-500 mb-1.5 sm:hidden">← Kaydır → tüm ligler</p>
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-1 scrollbar-hide">
         {LEAGUE_FILTERS.map(f => (
           <button
             key={f}

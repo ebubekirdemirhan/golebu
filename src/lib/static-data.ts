@@ -238,7 +238,7 @@ export function getDemoAIResponse(message: string): string {
     return '🤖 **GolEbu Analiz Sistemi** nasıl çalışır?\n\n1. **Veri toplama**: Son 5 maç istatistikleri\n2. **Poisson analizi**: Beklenen gol hesabı\n3. **Form skoru**: W=3, D=1, L=0 puanı\n4. **Güven skoru**: Veri kalitesi + tutarlılık\n5. **Value Bet**: Olasılık vs bahisçi oranı karşılaştırması\n\nEşiğimiz: **%65+** 🎯';
   }
   if (msg.includes('lig') || msg.includes('league') || msg.includes('hangi')) {
-    return '⚽ **GolEbu** şu ligleri analiz eder:\n\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League\n🇪🇸 La Liga\n🇩🇪 Bundesliga\n🇮🇹 Serie A\n🇫🇷 Ligue 1\n🏆 Champions League\n🏆 Europa League\n🇵🇹 Primeira Liga\n🇳🇱 Eredivisie\n🇧🇷 Serie A (Brezilya)\n\nVeri kaynağı: football-data.org API 📊';
+    return '⚽ **GolEbu** birçok ülke ligini (PL, La Liga, Bundesliga, Serie A, Ligue 1, Süper Lig, Şampiyonlar/Avrupa/Konferans Ligi, Hollanda, Portekiz, Championship, MLS, Japonya, Brezilya… ve daha fazlası) football-data.org üzerinden analiz eder.\n\n🇹🇷 **Not:** TFF 2. Lig ve Suudi/Arap Körfezi ligleri bu veri kaynağında yoktur. TFF 1. Lig için API kodu/plan sınırı olabilir.\n\nVeri kaynağı: football-data.org API 📊';
   }
   if (msg.includes('liverpool') || msg.includes('city') || msg.includes('madrid') || msg.includes('barcelona') || msg.includes('bayern')) {
     return '⚽ Bu takım hakkında detaylı analiz için:\n\n1. Son 5 maç performansına bak\n2. Gol ortalaması ve form skorunu incele\n3. Ev sahibi/deplasman farkı önemli\n4. Sakatlık ve kadro durumu etkili\n\nAnasayfadaki analiz kartlarında bu verileri bulabilirsin! 📊\n\n%65+ üstü tahminlere odaklan. 🎯';

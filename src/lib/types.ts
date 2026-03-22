@@ -5,8 +5,13 @@ export interface Team {
   crest: string;
 }
 
+/** football-data.org birincil; api-football (API-Sports) ikincil fikstür kaynağı */
+export type MatchDataSource = 'football-data' | 'api-football';
+
 export interface Match {
   id: number;
+  /** Yoksa football-data kabul edilir (geriye uyum) */
+  dataSource?: MatchDataSource;
   competition: {
     id: number;
     name: string;
@@ -77,6 +82,9 @@ export interface Analysis {
   // Güçlü tahmin notu
   strongestPick: string;
   analysisNote: string;
+
+  /** Tam istatistik (football-data) vs tahmini model (ikincil kaynak) */
+  statsQuality?: 'full' | 'estimated' | 'demo';
 }
 
 export interface AnalysisResult {

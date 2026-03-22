@@ -4,22 +4,29 @@ import {
   getTeamMatches,
   calculateTeamStats,
   getMockMatches,
-  SUPPORTED_LEAGUES,
 } from '@/lib/football-api';
+import { getApiFootballMatchesInRange, hasApiFootballKey } from '@/lib/api-football';
+import { mergeWithReservedSecondarySlots } from '@/lib/match-merge';
+import { ALL_LEAGUE_CODES } from '@/lib/leagues.config';
 import { generateAnalysis, generateMockAnalysis } from '@/lib/analysis-engine';
 import type { Analysis, Match, OverallStats } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-const SUPPORTED_CODES = new Set(SUPPORTED_LEAGUES.map((l) => l.code));
-const MAX_MATCHES = 8;
+/** Toplam kart; API-Football için ayrılan minimum slot: mergeWithReservedSecondarySlots */
+const MAX_MATCHES = 15;
 
-function hasApiKey(): boolean {
+function hasFootballDataKey(): boolean {
   const k = process.env.FOOTBALL_DATA_API_KEY;
   return Boolean(k && k !== 'your_football_data_api_key_here');
 }
 
 async function analysisForMatch(match: Match): Promise<Analysis> {
+  if (match.dataSource === 'api-football') {
+    const a = generateMockAnalysis(match);
+    return { ...a, statsQuality: 'estimated' };
+  }
+
   try {
     const [homeMatches, awayMatches] = await Promise.all([
       getTeamMatches(match.homeTeam.id, 10),
@@ -29,11 +36,13 @@ async function analysisForMatch(match: Match): Promise<Analysis> {
     const awayStats = calculateTeamStats(awayMatches, match.awayTeam.id);
 
     if (homeStats.last5.length < 2 || awayStats.last5.length < 2) {
-      return generateMockAnalysis(match);
+      const a = generateMockAnalysis(match);
+      return { ...a, statsQuality: 'estimated' };
     }
     return generateAnalysis(match, homeStats, awayStats);
   } catch {
-    return generateMockAnalysis(match);
+    const a = generateMockAnalysis(match);
+    return { ...a, statsQuality: 'estimated' };
   }
 }
 
@@ -46,38 +55,66 @@ const defaultStats: OverallStats = {
 };
 
 export async function GET() {
-  const apiConfigured = hasApiKey();
+  const hasFd = hasFootballDataKey();
+  const hasAf = hasApiFootballKey();
 
-  let matches: Match[] = [];
-  let demo = !apiConfigured;
+  const today = new Date().toISOString().split('T')[0];
+  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 
-  if (apiConfigured) {
+  if (!hasFd && !hasAf) {
+    const matches = getMockMatches();
+    const analyses = await Promise.all(matches.map((m) => analysisForMatch(m)));
+    return NextResponse.json({
+      analyses,
+      stats: defaultStats,
+      demo: true,
+      source: 'mock',
+      sources: { footballData: false, apiFootball: false },
+    });
+  }
+
+  let primary: Match[] = [];
+  if (hasFd) {
     const raw = await getTodayMatches();
-    matches = raw.filter((m) => SUPPORTED_CODES.has(m.competition.code)).slice(0, MAX_MATCHES);
+    primary = raw
+      .filter((m) => ALL_LEAGUE_CODES.has(m.competition.code))
+      .map((m) => ({ ...m, dataSource: 'football-data' as const }));
   }
 
-  if (!apiConfigured || matches.length === 0) {
-    if (!apiConfigured) {
-      matches = getMockMatches();
-      demo = true;
-    } else {
-      return NextResponse.json({
-        analyses: [] as Analysis[],
-        stats: defaultStats,
-        demo: false,
-        source: 'football-data.org',
-        message:
-          'Bugün desteklenen liglerde planlanmış maç bulunamadı. Yarın tekrar dene veya API kotanı kontrol et.',
-      });
-    }
+  let secondary: Match[] = [];
+  if (hasAf) {
+    secondary = await getApiFootballMatchesInRange(today, weekEnd);
   }
 
-  const analyses = await Promise.all(matches.map((m) => analysisForMatch(m)));
+  let merged = mergeWithReservedSecondarySlots(primary, secondary, MAX_MATCHES, 5);
+  merged = merged.filter(
+    (m) =>
+      m.dataSource === 'api-football' ||
+      ALL_LEAGUE_CODES.has(m.competition.code)
+  );
+
+  if (merged.length === 0) {
+    return NextResponse.json({
+      analyses: [] as Analysis[],
+      stats: defaultStats,
+      demo: false,
+      source: 'empty',
+      sources: { footballData: hasFd, apiFootball: hasAf },
+      message:
+        'Seçilen tarih aralığında maç bulunamadı. API kotası veya lig sezon parametresini kontrol edin (API-Football ücretsiz plan günlük limit).',
+    });
+  }
+
+  const analyses = await Promise.all(merged.map((m) => analysisForMatch(m)));
+
+  const sourceLabel =
+    hasFd && hasAf ? 'football-data.org+api-football' : hasFd ? 'football-data.org' : 'api-football';
 
   return NextResponse.json({
     analyses,
     stats: defaultStats,
-    demo,
-    source: demo ? 'mock' : 'football-data.org',
+    demo: false,
+    source: sourceLabel,
+    sources: { footballData: hasFd, apiFootball: hasAf },
   });
 }

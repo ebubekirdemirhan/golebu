@@ -259,6 +259,7 @@ export function generateAnalysis(match: Match, homeStats: TeamStats, awayStats: 
     valueBet,
     strongestPick: strongest.pct >= 65 ? `${strongest.name} (%${strongest.pct})` : '',
     analysisNote: note.trim(),
+    statsQuality: 'full',
   };
 }
 
@@ -319,5 +320,6 @@ export function generateMockAnalysis(match: Match): Analysis {
     scoringRate: awayStrong ? 80 : 40,
   };
 
-  return generateAnalysis(match, homeStats, awayStats);
+  const base = generateAnalysis(match, homeStats, awayStats);
+  return { ...base, statsQuality: 'demo' as const };
 }

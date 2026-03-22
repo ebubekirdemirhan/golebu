@@ -46,6 +46,15 @@ export default function AnalysisCard({ analysis, showTrend = true }: Props) {
         <span className="text-gray-400 text-sm font-mono">{matchTime}</span>
       </div>
 
+      {analysis.statsQuality === 'estimated' && (
+        <div className="mx-4 mb-2 rounded-lg bg-amber-500/10 border border-amber-500/25 px-3 py-2">
+          <p className="text-amber-200/90 text-[11px] leading-snug">
+            <span className="font-semibold text-amber-300">Tahmini analiz:</span> Bu maç ikincil veri kaynağından (API-Football).
+            Son maç / gol trendi gerçek istatistik değil; model üretimidir.
+          </p>
+        </div>
+      )}
+
       {/* Takımlar */}
       <div className="flex items-center justify-between px-6 py-3">
         <div className="flex-1 text-left">
