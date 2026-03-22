@@ -1,21 +1,9 @@
+'use client';
+
 import { CheckCircle, XCircle } from 'lucide-react';
 import { formatMatchDate } from '@/lib/utils';
 import StatsOverview from '@/components/layout/StatsOverview';
-
-async function getResults() {
-  try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const [resultsRes, statsRes] = await Promise.all([
-      fetch(`${baseUrl}/api/results`, { next: { revalidate: 300 } }),
-      fetch(`${baseUrl}/api/results?type=stats`, { next: { revalidate: 300 } }),
-    ]);
-    const results = await resultsRes.json();
-    const statsData = await statsRes.json();
-    return { results: results.results, stats: statsData.stats };
-  } catch {
-    return { results: [], stats: { totalMatches: 0, winnerSuccess: 0, over25Success: 0, bttsSuccess: 0, hy05Success: 0 } };
-  }
-}
+import { getStaticResults, getStaticStats } from '@/lib/static-data';
 
 function HitBadge({ hit }: { hit: boolean }) {
   return hit ? (
@@ -25,8 +13,9 @@ function HitBadge({ hit }: { hit: boolean }) {
   );
 }
 
-export default async function ResultsPage() {
-  const { results, stats } = await getResults();
+export default function ResultsPage() {
+  const results = getStaticResults();
+  const stats = getStaticStats();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -40,27 +29,8 @@ export default async function ResultsPage() {
       <StatsOverview stats={stats} />
 
       <div className="space-y-3">
-        {results.map((result: {
-          id: string;
-          homeTeam: string;
-          awayTeam: string;
-          competition: string;
-          utcDate: string;
-          actualScore: { home: number; away: number };
-          predictions: {
-            winner: string;
-            winnerHit: boolean;
-            over25: number;
-            over25Hit: boolean;
-            btts: number;
-            bttsHit: boolean;
-            hy05: number;
-            hy05Hit: boolean;
-          };
-          note: string;
-        }) => (
+        {results.map((result) => (
           <div key={result.id} className="bg-[#13132a] border border-white/5 rounded-2xl p-4">
-            {/* Maç başlığı */}
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-gray-400 text-xs mb-0.5">{result.competition}</p>
@@ -76,7 +46,6 @@ export default async function ResultsPage() {
               </div>
             </div>
 
-            {/* Tahmin sonuçları */}
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div className="bg-[#1a1a35] rounded-lg p-2 flex items-center justify-between">
                 <div>
@@ -108,7 +77,6 @@ export default async function ResultsPage() {
               </div>
             </div>
 
-            {/* Analiz notu */}
             {result.note && (
               <div className="bg-white/5 rounded-lg p-2">
                 <p className="text-gray-400 text-xs">💡 {result.note}</p>
@@ -117,13 +85,6 @@ export default async function ResultsPage() {
           </div>
         ))}
       </div>
-
-      {results.length === 0 && (
-        <div className="text-center py-16">
-          <span className="text-4xl mb-4 block">📊</span>
-          <p className="text-gray-400">Henüz sonuç kaydedilmemiş.</p>
-        </div>
-      )}
     </div>
   );
 }

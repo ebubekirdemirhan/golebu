@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { ChatMessage } from '@/lib/types';
+import { getDemoAIResponse } from '@/lib/static-data';
 
 const SUGGESTED_QUESTIONS = [
   '2.5 Gol Üstü nasıl hesaplanır?',
@@ -36,37 +37,21 @@ export default function AssistantPage() {
     setInput('');
     setLoading(true);
 
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          history: messages.slice(-10),
-        }),
-      });
-      const data = await res.json();
-      
-      const botMsg: ChatMessage = {
-        role: 'assistant',
-        content: data.response || 'Üzgünüm, bir hata oluştu.',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botMsg]);
-    } catch {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Bağlantı hatası. Lütfen tekrar deneyin.',
-        timestamp: new Date(),
-      }]);
-    } finally {
-      setLoading(false);
-    }
+    // Kisa gecikme ekle (dogal hissettirmek icin)
+    await new Promise(r => setTimeout(r, 800));
+
+    const response = getDemoAIResponse(text);
+    const botMsg: ChatMessage = {
+      role: 'assistant',
+      content: response,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, botMsg]);
+    setLoading(false);
   };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-8rem)]">
-      {/* Header */}
       <div className="mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
@@ -82,7 +67,6 @@ export default function AssistantPage() {
         </div>
       </div>
 
-      {/* Chat area */}
       <div className="flex-1 overflow-y-auto chat-scroll space-y-4 mb-4">
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -122,7 +106,6 @@ export default function AssistantPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Önerilen sorular */}
       {messages.length === 1 && (
         <div className="mb-3">
           <p className="text-gray-500 text-xs mb-2">Önerilen sorular:</p>
@@ -140,7 +123,6 @@ export default function AssistantPage() {
         </div>
       )}
 
-      {/* Input */}
       <div className="flex gap-2">
         <input
           type="text"

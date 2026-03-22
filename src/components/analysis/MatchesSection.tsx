@@ -1,15 +1,13 @@
 'use client';
 
-import { Analysis, Match } from '@/lib/types';
+import { Analysis } from '@/lib/types';
 import AnalysisCard from './AnalysisCard';
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Lock, Crown } from 'lucide-react';
 
 interface Props {
   analyses: Analysis[];
-  matches?: Match[];
 }
 
 const FREE_LIMIT = 2;
@@ -18,10 +16,17 @@ const LEAGUE_FILTERS = ['Tümü', 'Premier League', 'La Liga', 'Bundesliga', 'Se
 
 export default function MatchesSection({ analyses }: Props) {
   const [filter, setFilter] = useState('Tümü');
-  const { data: session } = useSession();
-  
-  const userRole = (session?.user as { role?: string })?.role || 'free';
-  const isPremium = userRole === 'premium';
+  const [isPremium, setIsPremium] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('golebu_user');
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        setIsPremium(user.role === 'premium');
+      } catch { /* ignore */ }
+    }
+  }, []);
 
   const filtered = filter === 'Tümü'
     ? analyses
@@ -32,14 +37,12 @@ export default function MatchesSection({ analyses }: Props) {
       <div className="text-center py-16">
         <span className="text-4xl mb-4 block">⚽</span>
         <p className="text-gray-400">Bugün analiz edilecek maç bulunamadı.</p>
-        <p className="text-gray-600 text-sm mt-1">Yarın tekrar kontrol edin.</p>
       </div>
     );
   }
 
   return (
     <div>
-      {/* Lig filtresi */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
         {LEAGUE_FILTERS.map(f => (
           <button
@@ -56,7 +59,6 @@ export default function MatchesSection({ analyses }: Props) {
         ))}
       </div>
 
-      {/* Analiz sayısı */}
       <p className="text-gray-500 text-xs mb-4">
         {filtered.length} analiz gösteriliyor
         {filter !== 'Tümü' && ` • ${filter}`}
@@ -65,11 +67,10 @@ export default function MatchesSection({ analyses }: Props) {
         )}
       </p>
 
-      {/* Kartlar */}
       <div className="space-y-4">
         {filtered.map((analysis, index) => {
           const isLocked = !isPremium && index >= FREE_LIMIT;
-          
+
           if (isLocked) {
             return (
               <div key={analysis.matchId} className="relative">
@@ -93,7 +94,7 @@ export default function MatchesSection({ analyses }: Props) {
               </div>
             );
           }
-          
+
           return (
             <div key={analysis.matchId} className="analysis-card">
               <AnalysisCard analysis={analysis} showTrend={true} />
@@ -101,12 +102,6 @@ export default function MatchesSection({ analyses }: Props) {
           );
         })}
       </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-400 text-sm">Bu ligde bugün analiz yok.</p>
-        </div>
-      )}
     </div>
   );
 }

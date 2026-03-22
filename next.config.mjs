@@ -1,15 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
+  basePath: '/golebu',
+  assetPrefix: '/golebu/',
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'crests.football-data.org' },
-      { protocol: 'https', hostname: 'upload.wikimedia.org' },
-      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
-    ],
+    unoptimized: true,
   },
-  env: {
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-  },
+  trailingSlash: true,
 };
 
 export default nextConfig;

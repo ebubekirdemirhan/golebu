@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -19,30 +19,28 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
+    await new Promise(r => setTimeout(r, 1000));
 
-      if (result?.error) {
-        setError('Email veya şifre hatalı. Demo: test@golebu.com / test123');
-      } else {
-        router.push('/');
-        router.refresh();
-      }
-    } catch {
-      setError('Giriş yapılırken bir hata oluştu.');
-    } finally {
-      setLoading(false);
+    const demoUsers = [
+      { email: 'test@golebu.com', password: 'test123', name: 'Test Kullanıcı' },
+      { email: 'uye@golebu.com', password: 'uye123', name: 'Üye' },
+    ];
+
+    const user = demoUsers.find(u => u.email === email && u.password === password);
+
+    if (user) {
+      setSuccess(true);
+      localStorage.setItem('golebu_user', JSON.stringify({ name: user.name, email: user.email, role: user.email.includes('test') ? 'premium' : 'free' }));
+      setTimeout(() => router.push('/'), 1500);
+    } else {
+      setError('Email veya şifre hatalı. Demo: test@golebu.com / test123');
     }
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full border-2 border-green-400 bg-[#1a1a35] flex items-center justify-center mx-auto mb-3 shadow-lg shadow-green-400/20">
             <span className="text-white font-black text-xs leading-none text-center">GOL<br/>EBU</span>
@@ -53,50 +51,51 @@ export default function LoginPage() {
           <p className="text-gray-400 text-sm mt-1">AI destekli futbol analizine giriş yap</p>
         </div>
 
-        {/* Demo info */}
         <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-3 mb-4">
-            <p className="text-blue-300 text-xs font-medium mb-1">Demo Hesapları</p>
+          <p className="text-blue-300 text-xs font-medium mb-1">Demo Hesapları</p>
           <div className="space-y-1">
             <p className="text-blue-400/70 text-xs">Premium: <code>test@golebu.com</code> / <code>test123</code></p>
             <p className="text-blue-400/70 text-xs">Ücretsiz: <code>uye@golebu.com</code> / <code>uye123</code></p>
           </div>
         </div>
 
-        {/* Form */}
+        {success && (
+          <div className="flex items-center gap-2 bg-green-900/20 border border-green-500/30 rounded-xl p-3 mb-4">
+            <CheckCircle className="w-4 h-4 text-green-400" />
+            <p className="text-green-400 text-xs">Giriş başarılı! Yönlendiriliyorsun...</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="Email adresi"
-                required
-                className="w-full bg-[#13132a] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-600 text-sm outline-none focus:border-green-500/50 transition-colors"
-              />
-            </div>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Email adresi"
+              required
+              className="w-full bg-[#13132a] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-600 text-sm outline-none focus:border-green-500/50 transition-colors"
+            />
           </div>
 
-          <div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Şifre"
-                required
-                className="w-full bg-[#13132a] border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white placeholder-gray-600 text-sm outline-none focus:border-green-500/50 transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Şifre"
+              required
+              className="w-full bg-[#13132a] border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white placeholder-gray-600 text-sm outline-none focus:border-green-500/50 transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
 
           {error && (
