@@ -14,13 +14,17 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export default function AssistantPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setMessages([{
       role: 'assistant',
       content: '⚽ Merhaba! Ben GolEbu\'nun AI analiz asistanıyım.\n\nFutbol tahminleri, istatistikler ve analiz sistemi hakkında sorularını yanıtlayabilirim. Ne öğrenmek istersin? 🎯',
       timestamp: new Date(),
-    },
-  ]);
+    }]);
+  }, []);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -106,7 +110,7 @@ export default function AssistantPage() {
         <div ref={bottomRef} />
       </div>
 
-      {messages.length === 1 && (
+      {mounted && messages.length === 1 && (
         <div className="mb-3">
           <p className="text-gray-500 text-xs mb-2">Önerilen sorular:</p>
           <div className="flex flex-wrap gap-2">

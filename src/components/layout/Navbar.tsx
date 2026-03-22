@@ -22,8 +22,10 @@ interface UserData {
 export default function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<UserData | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const stored = localStorage.getItem('golebu_user');
     if (stored) {
       try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
@@ -69,7 +71,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            {user ? (
+            {mounted && user ? (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
                   <User className="w-4 h-4 text-gray-400" />
@@ -114,7 +116,7 @@ export default function Navbar() {
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           ))}
-          {user ? (
+          {mounted && user ? (
             <button
               onClick={handleLogout}
               className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-gray-500"
@@ -145,7 +147,7 @@ export default function Navbar() {
               GOL<span className="text-green-400">EBU</span>
             </span>
           </Link>
-          {user ? (
+          {mounted && user ? (
             <span className="text-xs text-gray-400">{user.name.split(' ')[0]}</span>
           ) : (
             <Link href="/login" className="text-xs text-green-400 font-semibold">Giriş Yap</Link>

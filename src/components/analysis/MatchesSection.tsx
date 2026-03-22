@@ -17,8 +17,10 @@ const LEAGUE_FILTERS = ['Tümü', 'Premier League', 'La Liga', 'Bundesliga', 'Se
 export default function MatchesSection({ analyses }: Props) {
   const [filter, setFilter] = useState('Tümü');
   const [isPremium, setIsPremium] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const stored = localStorage.getItem('golebu_user');
     if (stored) {
       try {
@@ -62,14 +64,14 @@ export default function MatchesSection({ analyses }: Props) {
       <p className="text-gray-500 text-xs mb-4">
         {filtered.length} analiz gösteriliyor
         {filter !== 'Tümü' && ` • ${filter}`}
-        {!isPremium && filtered.length > FREE_LIMIT && (
+        {mounted && !isPremium && filtered.length > FREE_LIMIT && (
           <span className="text-purple-400 ml-1">• {FREE_LIMIT} ücretsiz, geri kalanı Premium</span>
         )}
       </p>
 
       <div className="space-y-4">
         {filtered.map((analysis, index) => {
-          const isLocked = !isPremium && index >= FREE_LIMIT;
+          const isLocked = mounted && !isPremium && index >= FREE_LIMIT;
 
           if (isLocked) {
             return (
