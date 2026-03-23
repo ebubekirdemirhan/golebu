@@ -46,12 +46,12 @@ export function getLeagueFlag(code: string): string {
   if (af) {
     const id = parseInt(af[1], 10);
     const byId: Record<number, string> = {
+      203: '🇹🇷',
       204: '🇹🇷',
       205: '🇹🇷',
-      206: '🇹🇷',
       307: '🇸🇦',
       301: '🇦🇪',
-      233: '🇶🇦',
+      305: '🇶🇦',
     };
     return byId[id] ?? '⚽';
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   getTodayMatches,
+  getMatchesByDate,
   getTeamMatches,
   calculateTeamStats,
   getMockMatches,
@@ -249,11 +250,23 @@ export async function GET() {
     primary = raw
       .filter((m) => ALL_LEAGUE_CODES.has(m.competition.code))
       .map((m) => ({ ...m, dataSource: 'football-data' as const }));
+
+    // Bazı günlerde whitelist dışı liglerden maç gelir; boş ekranı önlemek için geniş fallback.
+    if (primary.length === 0) {
+      const broad = await getMatchesByDate(primaryRange.from, primaryRange.to);
+      primary = broad
+        .filter((m) => ['SCHEDULED', 'TIMED', 'LIVE', 'IN_PLAY'].includes(m.status))
+        .slice(0, Math.max(10, envInt('MAX_MATCHES', MAX_MATCHES, 5, 50)))
+        .map((m) => ({ ...m, dataSource: 'football-data' as const }));
+    }
   }
 
   let secondary: Match[] = [];
+  let apiFootballPlanRestricted = false;
   if (hasAf) {
-    secondary = await getApiFootballMatchesInRange(primaryRange.from, primaryRange.to);
+    const af = await getApiFootballMatchesInRange(primaryRange.from, primaryRange.to);
+    secondary = af.matches;
+    apiFootballPlanRestricted = af.planRestricted;
   }
 
   const maxMatches = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
@@ -268,11 +281,28 @@ export async function GET() {
   if (merged.length === 0) {
     // Birincil aralık boşsa daha geniş aralıkta bir kez daha dene
     if (hasAf && daysAheadFallback > daysAheadPrimary) {
-      secondary = await getApiFootballMatchesInRange(fallbackRange.from, fallbackRange.to);
+      const af = await getApiFootballMatchesInRange(fallbackRange.from, fallbackRange.to);
+      secondary = af.matches;
+      apiFootballPlanRestricted = apiFootballPlanRestricted || af.planRestricted;
       const maxMatchesFallback = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
       const maxSecondaryFallback = envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20);
       merged = mergeWithReservedSecondarySlots(primary, secondary, maxMatchesFallback, maxSecondaryFallback).filter(
         (m) => m.dataSource === 'api-football' || ALL_LEAGUE_CODES.has(m.competition.code)
+      );
+    }
+
+    // Hala boşsa football-data'da tüm liglerden son bir geniş deneme yap.
+    if (merged.length === 0 && hasFd && daysAheadFallback > daysAheadPrimary) {
+      const broadFallback = await getMatchesByDate(fallbackRange.from, fallbackRange.to);
+      const primaryFallback = broadFallback
+        .filter((m) => ['SCHEDULED', 'TIMED', 'LIVE', 'IN_PLAY'].includes(m.status))
+        .slice(0, envInt('MAX_MATCHES', MAX_MATCHES, 5, 50))
+        .map((m) => ({ ...m, dataSource: 'football-data' as const }));
+      merged = mergeWithReservedSecondarySlots(
+        primaryFallback,
+        secondary,
+        envInt('MAX_MATCHES', MAX_MATCHES, 5, 50),
+        envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20)
       );
     }
   }
@@ -284,10 +314,13 @@ export async function GET() {
       demo: false,
       source: 'empty',
       sources: { footballData: hasFd, apiFootball: hasAf },
-      message:
+      message: (
         `Seçilen tarih aralığında maç bulunamadı. Denenen aralık: ${daysAheadPrimary} gün` +
         (daysAheadFallback > daysAheadPrimary ? `, fallback: ${daysAheadFallback} gün.` : '.') +
-        ' API kotası veya lig sezon parametresini kontrol edin (API-Football ücretsiz plan günlük limit).',
+        (apiFootballPlanRestricted
+          ? ' API-Football Free plan bu sezon/future erişimini kısıtlıyor (yalnızca 2022-2024 ve sınırlı endpoint).'
+          : ' API kotası veya lig sezon parametresini kontrol edin (API-Football ücretsiz plan günlük limit).')
+      ),
     });
   }
 

@@ -4,11 +4,12 @@ const BASE_URL = 'https://v3.football.api-sports.io';
 
 /**
  * api-football.com lig ID’leri.
- * 204 = Türkiye Süper Lig (football-data ile çakışırsa dedupe tek maç bırakır; FD yoksa yedek kaynak).
+ * 203 = Türkiye Süper Lig, 204 = TFF 1. Lig, 205 = TFF 2. Lig
  */
-export const API_FOOTBALL_DEFAULT_LEAGUE_IDS = [204, 205, 206, 307, 301, 233] as const;
+export const API_FOOTBALL_DEFAULT_LEAGUE_IDS = [203, 204, 205, 307, 301, 305] as const;
 
 interface ApiFootballFixtureResponse {
+  errors?: Record<string, string>;
   response?: ApiFootballFixtureItem[];
 }
 
@@ -56,13 +57,17 @@ export function currentSeasonStartYear(d = new Date()): number {
 
 function parseLeagueIds(): number[] {
   const raw = process.env.API_FOOTBALL_LEAGUE_IDS?.trim();
-  if (!raw) {
-    return [...API_FOOTBALL_DEFAULT_LEAGUE_IDS];
-  }
-  return raw
+  const parsed = raw
+    ? raw
     .split(',')
     .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !Number.isNaN(n) && n > 0);
+    .filter((n) => !Number.isNaN(n) && n > 0)
+    : [...API_FOOTBALL_DEFAULT_LEAGUE_IDS];
+
+  // Eski env değerleri için geriye uyumluluk: 233->305, 206->205; 204 varsa Süper Lig için 203 de ekle.
+  const mapped = parsed.map((id) => (id === 233 ? 305 : id === 206 ? 205 : id));
+  if (mapped.includes(204) && !mapped.includes(203)) mapped.push(203);
+  return Array.from(new Set(mapped));
 }
 
 const STATUS_MAP: Record<string, Match['status']> = {
@@ -138,13 +143,18 @@ function normalizeFixture(item: ApiFootballFixtureItem): Match {
   };
 }
 
+type FetchFixturesResult = {
+  items: ApiFootballFixtureItem[];
+  planRestricted: boolean;
+};
+
 async function fetchFixturesForLeague(
   leagueId: number,
   season: number,
   from: string,
   to: string,
   apiKey: string
-): Promise<ApiFootballFixtureItem[]> {
+): Promise<FetchFixturesResult> {
   const params = new URLSearchParams({
     league: String(leagueId),
     season: String(season),
@@ -158,11 +168,14 @@ async function fetchFixturesForLeague(
   });
 
   if (!res.ok) {
-    return [];
+    return { items: [], planRestricted: false };
   }
 
   const json = (await res.json()) as ApiFootballFixtureResponse;
-  return json.response ?? [];
+  const planRestricted = Object.values(json.errors ?? {}).some((v) =>
+    v.toLowerCase().includes('free plans do not have access')
+  );
+  return { items: json.response ?? [], planRestricted };
 }
 
 async function fetchFixturesForLeagueNoSeason(
@@ -170,7 +183,7 @@ async function fetchFixturesForLeagueNoSeason(
   from: string,
   to: string,
   apiKey: string
-): Promise<ApiFootballFixtureItem[]> {
+): Promise<FetchFixturesResult> {
   const params = new URLSearchParams({
     league: String(leagueId),
     from,
@@ -181,9 +194,27 @@ async function fetchFixturesForLeagueNoSeason(
     headers: { 'x-apisports-key': apiKey },
     cache: 'no-store',
   });
-  if (!res.ok) return [];
+  if (!res.ok) return { items: [], planRestricted: false };
   const json = (await res.json()) as ApiFootballFixtureResponse;
-  return json.response ?? [];
+  const planRestricted = Object.values(json.errors ?? {}).some((v) =>
+    v.toLowerCase().includes('free plans do not have access')
+  );
+  return { items: json.response ?? [], planRestricted };
+}
+
+async function fetchLiveFixtures(apiKey: string): Promise<ApiFootballFixtureItem[]> {
+  try {
+    const url = `${BASE_URL}/fixtures?live=all`;
+    const res = await fetch(url, {
+      headers: { 'x-apisports-key': apiKey },
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as ApiFootballFixtureResponse;
+    return json.response ?? [];
+  } catch {
+    return [];
+  }
 }
 
 async function getCurrentSeasonForLeague(leagueId: number, apiKey: string): Promise<number | null> {
@@ -207,13 +238,17 @@ async function getCurrentSeasonForLeague(leagueId: number, apiKey: string): Prom
  * İkincil kaynak: yaklaşan / canlı maçlar (ücretsiz kotada sınırlı).
  * İstatistik için football-data takım id’leri kullanılmaz; kartta tahmini model kullanılır.
  */
-export async function getApiFootballMatchesInRange(from: string, to: string): Promise<Match[]> {
+export async function getApiFootballMatchesInRange(
+  from: string,
+  to: string
+): Promise<{ matches: Match[]; planRestricted: boolean }> {
   if (!hasApiFootballKey()) {
-    return [];
+    return { matches: [], planRestricted: false };
   }
   const apiKey = process.env.API_FOOTBALL_KEY as string;
   const leagueIds = parseLeagueIds();
   const fallbackSeason = currentSeasonStartYear();
+  let planRestricted = false;
 
   const all: Match[] = [];
 
@@ -229,12 +264,16 @@ export async function getApiFootballMatchesInRange(from: string, to: string): Pr
 
     let items: ApiFootballFixtureItem[] = [];
     for (const s of seasonsToTry) {
-      items = await fetchFixturesForLeague(leagueId, s, from, to, apiKey);
+      const res = await fetchFixturesForLeague(leagueId, s, from, to, apiKey);
+      items = res.items;
+      planRestricted = planRestricted || res.planRestricted;
       if (items.length > 0) break;
     }
     if (items.length === 0) {
       // Bazı liglerde season filtresi dönmeyebilir; filtersiz tarih sorgusu dene.
-      items = await fetchFixturesForLeagueNoSeason(leagueId, from, to, apiKey);
+      const res = await fetchFixturesForLeagueNoSeason(leagueId, from, to, apiKey);
+      items = res.items;
+      planRestricted = planRestricted || res.planRestricted;
     }
     for (const item of items) {
       const status = item.fixture.status.short;
@@ -243,5 +282,13 @@ export async function getApiFootballMatchesInRange(from: string, to: string): Pr
     }
   }
 
-  return all;
+  if (all.length === 0) {
+    // Ücretsiz planda future/next kapalı olduğunda canlı maçtan en azından kart üret.
+    const live = await fetchLiveFixtures(apiKey);
+    for (const item of live) {
+      all.push(normalizeFixture(item));
+    }
+  }
+
+  return { matches: all, planRestricted };
 }

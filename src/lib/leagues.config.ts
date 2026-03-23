@@ -67,12 +67,12 @@ export const SUPPORTED_LEAGUE_CODES = new Set(SUPPORTED_LEAGUES.map((l) => l.cod
  * @see src/lib/api-football.ts API_FOOTBALL_DEFAULT_LEAGUE_IDS
  */
 export const SECONDARY_LEAGUES_FOR_FILTERS: LeagueEntry[] = [
-  { code: 'AF204', filterLabel: 'Süper Lig (API)', name: 'Turkey - Süper Lig (API-Football)', flag: '🇹🇷' },
-  { code: 'AF205', filterLabel: 'TFF 1. Lig', name: 'Turkey - TFF 1. Lig', flag: '🇹🇷' },
-  { code: 'AF206', filterLabel: 'TFF 2. Lig', name: 'Turkey - TFF 2. Lig', flag: '🇹🇷' },
+  { code: 'AF203', filterLabel: 'Süper Lig (API)', name: 'Turkey - Süper Lig (API-Football)', flag: '🇹🇷' },
+  { code: 'AF204', filterLabel: 'TFF 1. Lig', name: 'Turkey - TFF 1. Lig', flag: '🇹🇷' },
+  { code: 'AF205', filterLabel: 'TFF 2. Lig', name: 'Turkey - TFF 2. Lig', flag: '🇹🇷' },
   { code: 'AF307', filterLabel: 'Suudi Arabistan', name: 'Saudi Pro League', flag: '🇸🇦' },
   { code: 'AF301', filterLabel: 'BAE', name: 'UAE Pro League', flag: '🇦🇪' },
-  { code: 'AF233', filterLabel: 'Katar', name: 'Qatar Stars League', flag: '🇶🇦' },
+  { code: 'AF305', filterLabel: 'Katar', name: 'Qatar Stars League', flag: '🇶🇦' },
 ];
 
 /** Filtre UI + izin verilen tüm competition.code değerleri */
