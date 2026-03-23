@@ -12,6 +12,13 @@ interface ApiFootballFixtureResponse {
   response?: ApiFootballFixtureItem[];
 }
 
+interface ApiFootballLeagueResponse {
+  response?: Array<{
+    league: { id: number; name: string };
+    seasons?: Array<{ year: number; current: boolean }>;
+  }>;
+}
+
 interface ApiFootballFixtureItem {
   fixture: {
     id: number;
@@ -158,6 +165,44 @@ async function fetchFixturesForLeague(
   return json.response ?? [];
 }
 
+async function fetchFixturesForLeagueNoSeason(
+  leagueId: number,
+  from: string,
+  to: string,
+  apiKey: string
+): Promise<ApiFootballFixtureItem[]> {
+  const params = new URLSearchParams({
+    league: String(leagueId),
+    from,
+    to,
+  });
+  const url = `${BASE_URL}/fixtures?${params.toString()}`;
+  const res = await fetch(url, {
+    headers: { 'x-apisports-key': apiKey },
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const json = (await res.json()) as ApiFootballFixtureResponse;
+  return json.response ?? [];
+}
+
+async function getCurrentSeasonForLeague(leagueId: number, apiKey: string): Promise<number | null> {
+  try {
+    const url = `${BASE_URL}/leagues?id=${leagueId}&current=true`;
+    const res = await fetch(url, {
+      headers: { 'x-apisports-key': apiKey },
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as ApiFootballLeagueResponse;
+    const first = json.response?.[0];
+    const current = first?.seasons?.find((s) => s.current);
+    return current?.year ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * İkincil kaynak: yaklaşan / canlı maçlar (ücretsiz kotada sınırlı).
  * İstatistik için football-data takım id’leri kullanılmaz; kartta tahmini model kullanılır.
@@ -168,16 +213,28 @@ export async function getApiFootballMatchesInRange(from: string, to: string): Pr
   }
   const apiKey = process.env.API_FOOTBALL_KEY as string;
   const leagueIds = parseLeagueIds();
-  const season = currentSeasonStartYear();
-  const seasonsToTry = [season, season - 1];
+  const fallbackSeason = currentSeasonStartYear();
 
   const all: Match[] = [];
 
   for (const leagueId of leagueIds) {
+    const detectedSeason = await getCurrentSeasonForLeague(leagueId, apiKey);
+    const seasonsToTry = Array.from(
+      new Set(
+        [detectedSeason, detectedSeason ? detectedSeason - 1 : null, fallbackSeason, fallbackSeason - 1].filter(
+          (n): n is number => typeof n === 'number'
+        )
+      )
+    );
+
     let items: ApiFootballFixtureItem[] = [];
     for (const s of seasonsToTry) {
       items = await fetchFixturesForLeague(leagueId, s, from, to, apiKey);
       if (items.length > 0) break;
+    }
+    if (items.length === 0) {
+      // Bazı liglerde season filtresi dönmeyebilir; filtersiz tarih sorgusu dene.
+      items = await fetchFixturesForLeagueNoSeason(leagueId, from, to, apiKey);
     }
     for (const item of items) {
       const status = item.fixture.status.short;
