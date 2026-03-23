@@ -32,6 +32,12 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
   return Math.max(min, Math.min(max, n));
 }
 
+function dateRangeFromToday(daysAhead: number): { from: string; to: string } {
+  const from = new Date().toISOString().split('T')[0];
+  const to = new Date(Date.now() + daysAhead * 86400000).toISOString().split('T')[0];
+  return { from, to };
+}
+
 function rankInStandings(
   data: LeagueStandingsResponse | null,
   teamId: number,
@@ -220,9 +226,10 @@ const defaultStats: OverallStats = {
 export async function GET() {
   const hasFd = hasFootballDataKey();
   const hasAf = hasApiFootballKey();
-
-  const today = new Date().toISOString().split('T')[0];
-  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  const daysAheadPrimary = envInt('MATCH_DAYS_AHEAD', 14, 1, 30);
+  const daysAheadFallback = envInt('MATCH_DAYS_AHEAD_FALLBACK', 30, daysAheadPrimary, 60);
+  const primaryRange = dateRangeFromToday(daysAheadPrimary);
+  const fallbackRange = dateRangeFromToday(daysAheadFallback);
 
   if (!hasFd && !hasAf) {
     const matches = getMockMatches();
@@ -246,7 +253,7 @@ export async function GET() {
 
   let secondary: Match[] = [];
   if (hasAf) {
-    secondary = await getApiFootballMatchesInRange(today, weekEnd);
+    secondary = await getApiFootballMatchesInRange(primaryRange.from, primaryRange.to);
   }
 
   const maxMatches = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
@@ -259,6 +266,18 @@ export async function GET() {
   );
 
   if (merged.length === 0) {
+    // Birincil aralık boşsa daha geniş aralıkta bir kez daha dene
+    if (hasAf && daysAheadFallback > daysAheadPrimary) {
+      secondary = await getApiFootballMatchesInRange(fallbackRange.from, fallbackRange.to);
+      const maxMatchesFallback = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
+      const maxSecondaryFallback = envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20);
+      merged = mergeWithReservedSecondarySlots(primary, secondary, maxMatchesFallback, maxSecondaryFallback).filter(
+        (m) => m.dataSource === 'api-football' || ALL_LEAGUE_CODES.has(m.competition.code)
+      );
+    }
+  }
+
+  if (merged.length === 0) {
     return NextResponse.json({
       analyses: [] as Analysis[],
       stats: defaultStats,
@@ -266,7 +285,9 @@ export async function GET() {
       source: 'empty',
       sources: { footballData: hasFd, apiFootball: hasAf },
       message:
-        'Seçilen tarih aralığında maç bulunamadı. API kotası veya lig sezon parametresini kontrol edin (API-Football ücretsiz plan günlük limit).',
+        `Seçilen tarih aralığında maç bulunamadı. Denenen aralık: ${daysAheadPrimary} gün` +
+        (daysAheadFallback > daysAheadPrimary ? `, fallback: ${daysAheadFallback} gün.` : '.') +
+        ' API kotası veya lig sezon parametresini kontrol edin (API-Football ücretsiz plan günlük limit).',
     });
   }
 
