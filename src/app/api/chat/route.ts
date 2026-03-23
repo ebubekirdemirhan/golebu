@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   }
 
   const genAI = new GoogleGenerativeAI(geminiKey);
-  const baseUrl = process.env.NEXTAUTH_URL || req.nextUrl.origin;
+  const baseUrl = req.nextUrl.origin || process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const liveContext = await fetchLiveContext(baseUrl);
   const contextJson = liveContext
     ? JSON.stringify(liveContext, null, 2)
