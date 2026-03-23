@@ -1,6 +1,6 @@
 'use client';
 
-import { Analysis } from '@/lib/types';
+import { Analysis, MatchDiagnostics, SourceHealthCode } from '@/lib/types';
 import AnalysisCard from './AnalysisCard';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -10,6 +10,7 @@ import { ALL_LEAGUE_FILTERS } from '@/lib/leagues.config';
 
 interface Props {
   analyses: Analysis[];
+  diagnostics?: MatchDiagnostics;
 }
 
 const FREE_LIMIT = 2;
@@ -20,7 +21,17 @@ const FILTER_TO_CODE: Record<string, string> = Object.fromEntries(
   ALL_LEAGUE_FILTERS.map((l) => [l.filterLabel, l.code])
 );
 
-export default function MatchesSection({ analyses }: Props) {
+const HEALTH_BADGE_CLASS: Record<SourceHealthCode, string> = {
+  OK: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
+  NO_FIXTURE: 'bg-slate-500/15 text-slate-300 border-slate-500/25',
+  RATE_LIMIT: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
+  PLAN_BLOCK: 'bg-orange-500/15 text-orange-300 border-orange-500/25',
+  SCRAPE_BLOCK: 'bg-purple-500/15 text-purple-300 border-purple-500/25',
+  TIMEOUT: 'bg-red-500/15 text-red-300 border-red-500/25',
+  ERROR: 'bg-red-500/15 text-red-300 border-red-500/25',
+};
+
+export default function MatchesSection({ analyses, diagnostics }: Props) {
   const { data: session, status } = useSession();
   const [filter, setFilter] = useState<string>('Tümü');
   const [mounted, setMounted] = useState(false);
@@ -40,18 +51,45 @@ export default function MatchesSection({ analyses }: Props) {
           return a.competition.name.includes(filter);
         });
 
+  const diagnosticsPanel = diagnostics?.sourceHealth?.length ? (
+    <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <p className="text-[11px] text-gray-300 mb-2">Kaynak Teşhis</p>
+      <div className="flex flex-wrap gap-2">
+        {diagnostics.sourceHealth.map((s, i) => (
+          <span
+            key={`${s.source}-${s.code}-${i}`}
+            className={`px-2 py-1 rounded-md border text-[11px] ${HEALTH_BADGE_CLASS[s.code]}`}
+            title={s.message ?? undefined}
+          >
+            {s.source}: {s.code} ({s.matchCount})
+          </span>
+        ))}
+      </div>
+      <p className="text-[10px] text-gray-500 mt-2">
+        Aralık: {diagnostics.range.primaryFrom} → {diagnostics.range.primaryTo}
+        {diagnostics.range.fallbackFrom && diagnostics.range.fallbackTo
+          ? ` • fallback: ${diagnostics.range.fallbackFrom} → ${diagnostics.range.fallbackTo}`
+          : ''}
+      </p>
+    </div>
+  ) : null;
+
   if (analyses.length === 0) {
     return (
-      <div className="text-center py-16">
-        <span className="text-4xl mb-4 block">⚽</span>
-        <p className="text-gray-400">Bugün analiz edilecek maç bulunamadı.</p>
-        <p className="text-gray-500 text-xs mt-2">football-data.org anahtarı ekli mi ve bugün desteklenen liglerde maç var mı kontrol et.</p>
-      </div>
+      <>
+        {diagnosticsPanel}
+        <div className="text-center py-16">
+          <span className="text-4xl mb-4 block">⚽</span>
+          <p className="text-gray-300">Bu aralıkta analiz edilecek maç bulunamadı.</p>
+          <p className="text-gray-500 text-xs mt-2">Yukarıdaki teşhis panelinden hangi kaynağın bloklandığını kontrol et.</p>
+        </div>
+      </>
     );
   }
 
   return (
     <div>
+      {diagnosticsPanel}
       <p className="text-[10px] text-gray-500 mb-1.5 sm:hidden">← Kaydır → tüm ligler</p>
       <div className="flex gap-2 overflow-x-auto pb-2 mb-1 scrollbar-hide">
         {LEAGUE_FILTERS.map(f => (

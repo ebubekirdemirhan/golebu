@@ -15,6 +15,10 @@
 | `API_FOOTBALL_LEAGUE_IDS` | (İsteğe bağlı) Virgülle lig ID’leri. Yoksa varsayılan: `203,204,205,307,301,305`. |
 | `MAX_MATCHES` | (İsteğe bağlı) `/api/matches` üst sınırı. Varsayılan `20`, önerilen aralık `10-30`. |
 | `MAX_SECONDARY` | (İsteğe bağlı) API-Football için ayrılan slot. Varsayılan `8`. |
+| `ENABLE_SCRAPING` | (İsteğe bağlı) Scrape fallback aktif/pasif (`true/false`). Varsayılan `true`. |
+| `SOURCE_TIMEOUT_MS` | (İsteğe bağlı) Kaynak başına timeout (ms). Varsayılan `9000`. |
+| `SOURCE_RETRY_COUNT` | (İsteğe bağlı) Kaynak hata olursa tekrar deneme sayısı. Varsayılan `2`. |
+| `SCRAPE_TIMEOUT_MS` | (İsteğe bağlı) Scrape sağlayıcısı timeout (ms). Varsayılan `8000`. |
 | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) — AI asistan için |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` ile üret |
 | `NEXTAUTH_URL` | Production URL: `https://senin-proje.vercel.app` (custom domain varsa o) |
@@ -44,4 +48,5 @@ Env ekledikten sonra **Deployments → Redeploy** (veya boş commit push).
 
 - Ücretsiz anahtarda günlük istek sınırı küçüktür; ana sayfa her açılışta birden fazla lig için `/fixtures` çağırır.
 - Kota bittiğinde ikincil kaynak boş döner; birincil (`FOOTBALL_DATA_API_KEY`) hâlâ çalışıyorsa o maçlar listelenir.
+- Yeni sürümde `/api/matches` yanıtında `diagnostics.sourceHealth` alanı gelir; kaynak bazlı `PLAN_BLOCK / RATE_LIMIT / SCRAPE_BLOCK` durumlarını UI’da görebilirsiniz.
 - Detay: [docs/LEAGUES.md](docs/LEAGUES.md).

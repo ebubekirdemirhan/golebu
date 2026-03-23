@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import {
-  getTodayMatches,
-  getMatchesByDate,
   getTeamMatches,
   calculateTeamStats,
   getMockMatches,
@@ -11,11 +9,10 @@ import {
   getRaceContext,
   type LeagueStandingsResponse,
 } from '@/lib/football-api';
-import { getApiFootballMatchesInRange, hasApiFootballKey } from '@/lib/api-football';
-import { mergeWithReservedSecondarySlots } from '@/lib/match-merge';
-import { ALL_LEAGUE_CODES } from '@/lib/leagues.config';
+import { hasApiFootballKey } from '@/lib/api-football';
+import { orchestrateMatches } from '@/lib/match-orchestrator';
 import { generateAnalysis, generateMockAnalysis } from '@/lib/analysis-engine';
-import type { Analysis, Match, OverallStats } from '@/lib/types';
+import type { Analysis, Match, MatchDiagnostics, OverallStats } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -161,7 +158,7 @@ function hasFootballDataKey(): boolean {
 }
 
 async function analysisForMatch(match: Match): Promise<Analysis> {
-  if (match.dataSource === 'api-football') {
+  if (match.dataSource === 'api-football' || match.dataSource === 'scrape') {
     const a = generateMockAnalysis(match);
     return { ...a, statsQuality: 'estimated' };
   }
@@ -232,7 +229,8 @@ export async function GET() {
   const primaryRange = dateRangeFromToday(daysAheadPrimary);
   const fallbackRange = dateRangeFromToday(daysAheadFallback);
 
-  if (!hasFd && !hasAf) {
+  const enableScraping = String(process.env.ENABLE_SCRAPING ?? 'true').toLowerCase() !== 'false';
+  if (!hasFd && !hasAf && !enableScraping) {
     const matches = getMockMatches();
     const analyses = await Promise.all(matches.map((m) => analysisForMatch(m)));
     return NextResponse.json({
@@ -241,71 +239,35 @@ export async function GET() {
       demo: true,
       source: 'mock',
       sources: { footballData: false, apiFootball: false },
+      diagnostics: {
+        emptyPolicy: 'show_empty_hard',
+        sourceHealth: [],
+        range: {
+          primaryFrom: primaryRange.from,
+          primaryTo: primaryRange.to,
+          fallbackFrom: fallbackRange.from,
+          fallbackTo: fallbackRange.to,
+        },
+      } satisfies MatchDiagnostics,
     });
   }
-
-  let primary: Match[] = [];
-  if (hasFd) {
-    const raw = await getTodayMatches();
-    primary = raw
-      .filter((m) => ALL_LEAGUE_CODES.has(m.competition.code))
-      .map((m) => ({ ...m, dataSource: 'football-data' as const }));
-
-    // Bazı günlerde whitelist dışı liglerden maç gelir; boş ekranı önlemek için geniş fallback.
-    if (primary.length === 0) {
-      const broad = await getMatchesByDate(primaryRange.from, primaryRange.to);
-      primary = broad
-        .filter((m) => ['SCHEDULED', 'TIMED', 'LIVE', 'IN_PLAY'].includes(m.status))
-        .slice(0, Math.max(10, envInt('MAX_MATCHES', MAX_MATCHES, 5, 50)))
-        .map((m) => ({ ...m, dataSource: 'football-data' as const }));
-    }
-  }
-
-  let secondary: Match[] = [];
-  let apiFootballPlanRestricted = false;
-  if (hasAf) {
-    const af = await getApiFootballMatchesInRange(primaryRange.from, primaryRange.to);
-    secondary = af.matches;
-    apiFootballPlanRestricted = af.planRestricted;
-  }
-
   const maxMatches = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
   const maxSecondary = envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20);
-  let merged = mergeWithReservedSecondarySlots(primary, secondary, maxMatches, maxSecondary);
-  merged = merged.filter(
-    (m) =>
-      m.dataSource === 'api-football' ||
-      ALL_LEAGUE_CODES.has(m.competition.code)
-  );
-
-  if (merged.length === 0) {
-    // Birincil aralık boşsa daha geniş aralıkta bir kez daha dene
-    if (hasAf && daysAheadFallback > daysAheadPrimary) {
-      const af = await getApiFootballMatchesInRange(fallbackRange.from, fallbackRange.to);
-      secondary = af.matches;
-      apiFootballPlanRestricted = apiFootballPlanRestricted || af.planRestricted;
-      const maxMatchesFallback = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
-      const maxSecondaryFallback = envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20);
-      merged = mergeWithReservedSecondarySlots(primary, secondary, maxMatchesFallback, maxSecondaryFallback).filter(
-        (m) => m.dataSource === 'api-football' || ALL_LEAGUE_CODES.has(m.competition.code)
-      );
-    }
-
-    // Hala boşsa football-data'da tüm liglerden son bir geniş deneme yap.
-    if (merged.length === 0 && hasFd && daysAheadFallback > daysAheadPrimary) {
-      const broadFallback = await getMatchesByDate(fallbackRange.from, fallbackRange.to);
-      const primaryFallback = broadFallback
-        .filter((m) => ['SCHEDULED', 'TIMED', 'LIVE', 'IN_PLAY'].includes(m.status))
-        .slice(0, envInt('MAX_MATCHES', MAX_MATCHES, 5, 50))
-        .map((m) => ({ ...m, dataSource: 'football-data' as const }));
-      merged = mergeWithReservedSecondarySlots(
-        primaryFallback,
-        secondary,
-        envInt('MAX_MATCHES', MAX_MATCHES, 5, 50),
-        envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20)
-      );
-    }
-  }
+  const orchestrated = await orchestrateMatches({
+    hasFootballData: hasFd,
+    hasApiFootball: hasAf,
+    maxMatches,
+    maxSecondary,
+    primaryRange,
+    fallbackRange: daysAheadFallback > daysAheadPrimary ? fallbackRange : undefined,
+    sourceTimeoutMs: envInt('SOURCE_TIMEOUT_MS', 9000, 1000, 30000),
+    scrapeTimeoutMs: envInt('SCRAPE_TIMEOUT_MS', 8000, 1000, 30000),
+    sourceRetryCount: envInt('SOURCE_RETRY_COUNT', 2, 1, 4),
+    enableScraping,
+  });
+  const merged = orchestrated.matches;
+  const diagnostics = orchestrated.diagnostics;
+  const apiPlanBlocked = diagnostics.sourceHealth.some((h) => h.source === 'api-football' && h.code === 'PLAN_BLOCK');
 
   if (merged.length === 0) {
     return NextResponse.json({
@@ -313,13 +275,18 @@ export async function GET() {
       stats: defaultStats,
       demo: false,
       source: 'empty',
-      sources: { footballData: hasFd, apiFootball: hasAf },
+      sources: {
+        footballData: hasFd,
+        apiFootball: hasAf,
+        scrape: enableScraping,
+      },
+      diagnostics,
       message: (
         `Seçilen tarih aralığında maç bulunamadı. Denenen aralık: ${daysAheadPrimary} gün` +
         (daysAheadFallback > daysAheadPrimary ? `, fallback: ${daysAheadFallback} gün.` : '.') +
-        (apiFootballPlanRestricted
+        (apiPlanBlocked
           ? ' API-Football Free plan bu sezon/future erişimini kısıtlıyor (yalnızca 2022-2024 ve sınırlı endpoint).'
-          : ' API kotası veya lig sezon parametresini kontrol edin (API-Football ücretsiz plan günlük limit).')
+          : ' Kaynak teşhis panelini kontrol edin: PLAN_BLOCK / RATE_LIMIT / SCRAPE_BLOCK nedenini görebilirsiniz.')
       ),
     });
   }
@@ -327,18 +294,30 @@ export async function GET() {
   const analyses = await Promise.all(merged.map((m) => analysisForMatch(m)));
 
   const sourceLabel =
-    hasFd && hasAf ? 'football-data.org+api-football' : hasFd ? 'football-data.org' : 'api-football';
-  const message =
-    !hasAf && hasFd
-      ? 'API-Football kapalı görünüyor (Vercel env: API_FOOTBALL_KEY). Şu an sadece football-data kaynağı kullanılıyor.'
-      : undefined;
+    hasFd && hasAf
+      ? 'football-data.org+api-football'
+      : hasFd
+        ? 'football-data.org'
+        : hasAf
+          ? 'api-football'
+          : 'scrape';
+  const message = diagnostics.sourceHealth
+    .filter((h) => h.code !== 'OK' && h.code !== 'NO_FIXTURE')
+    .map((h) => `${h.source}: ${h.code}`)
+    .slice(0, 3)
+    .join(' • ') || undefined;
 
   return NextResponse.json({
     analyses,
     stats: defaultStats,
     demo: false,
     source: sourceLabel,
-    sources: { footballData: hasFd, apiFootball: hasAf },
+    sources: {
+      footballData: hasFd,
+      apiFootball: hasAf,
+      scrape: enableScraping,
+    },
+    diagnostics,
     message,
   });
 }

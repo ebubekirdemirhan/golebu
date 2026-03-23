@@ -5,8 +5,8 @@ export interface Team {
   crest: string;
 }
 
-/** football-data.org birincil; api-football (API-Sports) ikincil fikstür kaynağı */
-export type MatchDataSource = 'football-data' | 'api-football';
+/** football-data.org birincil; api-football ikincil; scrape acil fallback */
+export type MatchDataSource = 'football-data' | 'api-football' | 'scrape';
 
 export interface Match {
   id: number;
@@ -20,7 +20,7 @@ export interface Match {
     country?: string;
   };
   utcDate: string;
-  status: 'SCHEDULED' | 'LIVE' | 'IN_PLAY' | 'PAUSED' | 'FINISHED' | 'POSTPONED' | 'CANCELLED';
+  status: 'SCHEDULED' | 'TIMED' | 'LIVE' | 'IN_PLAY' | 'PAUSED' | 'FINISHED' | 'POSTPONED' | 'CANCELLED';
   homeTeam: Team;
   awayTeam: Team;
   score: {
@@ -123,6 +123,37 @@ export interface OverallStats {
   over25Success: number;  // 2.5 Üst/Alt %
   bttsSuccess: number;    // KG Var/Yok %
   hy05Success: number;    // İY 0.5 Üst %
+}
+
+export type SourceHealthCode =
+  | 'OK'
+  | 'NO_FIXTURE'
+  | 'RATE_LIMIT'
+  | 'PLAN_BLOCK'
+  | 'SCRAPE_BLOCK'
+  | 'TIMEOUT'
+  | 'ERROR';
+
+export interface SourceHealth {
+  source: MatchDataSource;
+  code: SourceHealthCode;
+  matchCount: number;
+  latencyMs: number;
+  message?: string;
+  blockedByPlan?: boolean;
+  rateLimitHint?: string;
+  lastSuccessAt?: string;
+}
+
+export interface MatchDiagnostics {
+  emptyPolicy: 'show_empty_hard';
+  sourceHealth: SourceHealth[];
+  range: {
+    primaryFrom: string;
+    primaryTo: string;
+    fallbackFrom?: string;
+    fallbackTo?: string;
+  };
 }
 
 export type ConfidenceColor = 'green' | 'orange' | 'red';

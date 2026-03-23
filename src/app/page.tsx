@@ -5,7 +5,7 @@ import StatsOverview from '@/components/layout/StatsOverview';
 import DemoBanner from '@/components/layout/DemoBanner';
 import { Zap, Loader2, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import type { Analysis, OverallStats } from '@/lib/types';
+import type { Analysis, MatchDiagnostics, OverallStats } from '@/lib/types';
 
 export default function HomePage() {
   const [dateStr, setDateStr] = useState('');
@@ -18,7 +18,9 @@ export default function HomePage() {
   const [sources, setSources] = useState<{
     footballData: boolean;
     apiFootball: boolean;
+    scrape?: boolean;
   } | null>(null);
+  const [diagnostics, setDiagnostics] = useState<MatchDiagnostics | null>(null);
 
   useEffect(() => {
     const d = new Date();
@@ -39,6 +41,7 @@ export default function HomePage() {
         setStats(data.stats ?? null);
         setDemo(Boolean(data.demo));
         if (data.sources) setSources(data.sources);
+        if (data.diagnostics) setDiagnostics(data.diagnostics);
         if (data.message) setInfo(data.message);
       } catch {
         if (!cancelled) setError('Maç verisi alınamadı. Sayfayı yenile.');
@@ -77,6 +80,11 @@ export default function HomePage() {
               API-Football (Türkiye/Körfez ek ligi)
             </span>
           )}
+          {sources.scrape && (
+            <span className="px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-200/90 border border-purple-500/25">
+              Scrape fallback
+            </span>
+          )}
           <span className="text-gray-600 hidden sm:inline">— Lig filtrelerini sağa kaydırın (Süper Lig, TFF, Suudi…).</span>
         </p>
       )}
@@ -104,7 +112,7 @@ export default function HomePage() {
       {!loading && stats && (
         <>
           <StatsOverview stats={stats} />
-          <MatchesSection analyses={analyses} />
+          <MatchesSection analyses={analyses} diagnostics={diagnostics ?? undefined} />
         </>
       )}
     </div>
