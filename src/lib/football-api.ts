@@ -141,13 +141,48 @@ export async function getLeagueStandings(leagueCode: string): Promise<LeagueStan
 
 function pickLeagueTable(data: LeagueStandingsResponse | null): StandingRow[] {
   if (!data?.standings?.length) return [];
-  const preferred = data.standings.find((s) => s.type === 'TOTAL') ?? data.standings[0];
-  return preferred?.table ?? [];
+  const preferred = data.standings.find((s) => s.type === 'TOTAL');
+  if (preferred?.table?.length) return preferred.table;
+  // CL/EL gibi group tablolarda takım farklı grupta olabilir: tüm tabloları birleştir.
+  const merged = data.standings.flatMap((s) => s.table ?? []);
+  const seen = new Set<number>();
+  return merged.filter((r) => {
+    if (seen.has(r.team.id)) return false;
+    seen.add(r.team.id);
+    return true;
+  });
 }
 
 export function getTeamStanding(data: LeagueStandingsResponse | null, teamId: number): TeamStandingContext | null {
   const table = pickLeagueTable(data);
   const row = table.find((r) => r.team.id === teamId);
+  if (!row) return null;
+  return {
+    rank: row.position,
+    points: row.points,
+    goalDifference: row.goalDifference,
+  };
+}
+
+function normalizeTeamName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\b(fc|cf|ac|sc|afc)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function getTeamStandingByName(
+  data: LeagueStandingsResponse | null,
+  teamName: string
+): TeamStandingContext | null {
+  const table = pickLeagueTable(data);
+  if (!table.length || !teamName) return null;
+  const norm = normalizeTeamName(teamName);
+  const row = table.find((r) => normalizeTeamName(r.team.name) === norm);
   if (!row) return null;
   return {
     rank: row.position,

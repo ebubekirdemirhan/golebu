@@ -6,6 +6,7 @@ import {
   getMockMatches,
   getLeagueStandings,
   getTeamStanding,
+  getTeamStandingByName,
   getRaceContext,
   type LeagueStandingsResponse,
 } from '@/lib/football-api';
@@ -31,8 +32,16 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
   return Math.max(min, Math.min(max, n));
 }
 
-function rankInStandings(data: LeagueStandingsResponse | null, teamId: number): number | null {
-  return getTeamStanding(data, teamId)?.rank ?? null;
+function rankInStandings(
+  data: LeagueStandingsResponse | null,
+  teamId: number,
+  teamName?: string
+): number | null {
+  return (
+    getTeamStanding(data, teamId)?.rank ??
+    (teamName ? getTeamStandingByName(data, teamName)?.rank : null) ??
+    null
+  );
 }
 
 function resultForTeam(match: Match, teamId: number): 'W' | 'D' | 'L' {
@@ -71,7 +80,13 @@ function favoriteRecord(
   leagueCode: string,
   standings: LeagueStandingsResponse | null
 ): string {
-  const teamRank = rankInStandings(standings, teamId);
+  const teamSample = matches.find((m) => m.homeTeam.id === teamId || m.awayTeam.id === teamId);
+  const teamName = teamSample
+    ? teamSample.homeTeam.id === teamId
+      ? teamSample.homeTeam.name
+      : teamSample.awayTeam.name
+    : '';
+  const teamRank = rankInStandings(standings, teamId, teamName);
   if (!teamRank) return '-';
   const results = matches
     .filter(
@@ -83,7 +98,7 @@ function favoriteRecord(
     .slice(0, 8)
     .flatMap((m) => {
       const opp = m.homeTeam.id === teamId ? m.awayTeam : m.homeTeam;
-      const oppRank = rankInStandings(standings, opp.id);
+      const oppRank = rankInStandings(standings, opp.id, opp.name);
       if (!oppRank) return [];
       // düşük sıra = daha güçlü. Team daha yukarıdaysa favori kabul et.
       if (teamRank < oppRank) return [resultForTeam(m, teamId)];
@@ -110,7 +125,7 @@ function last5Opponents(
       const opponent = m.homeTeam.id === teamId ? m.awayTeam : m.homeTeam;
       return {
         name: opponent.name,
-        rank: rankInStandings(standings, opponent.id),
+        rank: rankInStandings(standings, opponent.id, opponent.name),
       };
     });
 }
