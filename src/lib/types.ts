@@ -93,6 +93,14 @@ export interface Analysis {
     home: Array<{ name: string; rank: number | null }>;
     away: Array<{ name: string; rank: number | null }>;
   };
+  performanceContext?: {
+    homeTeamHome: string;
+    homeTeamAway: string;
+    awayTeamHome: string;
+    awayTeamAway: string;
+    homeTeamFavorite: string;
+    awayTeamFavorite: string;
+  };
 
   /** Tam istatistik (football-data) vs tahmini model (ikincil kaynak) */
   statsQuality?: 'full' | 'estimated' | 'demo';

@@ -201,6 +201,12 @@ export function generateAnalysis(
     raceNote?: string;
     homeOpponents?: Array<{ name: string; rank: number | null }>;
     awayOpponents?: Array<{ name: string; rank: number | null }>;
+    homeTeamHome?: string;
+    homeTeamAway?: string;
+    awayTeamHome?: string;
+    awayTeamAway?: string;
+    homeTeamFavorite?: string;
+    awayTeamFavorite?: string;
   }
 ): Analysis {
   const over25 = calcOver25(homeStats.avgGoalsScored, awayStats.avgGoalsScored);
@@ -280,6 +286,14 @@ export function generateAnalysis(
     last5Opponents: {
       home: context?.homeOpponents ?? [],
       away: context?.awayOpponents ?? [],
+    },
+    performanceContext: {
+      homeTeamHome: context?.homeTeamHome ?? '-',
+      homeTeamAway: context?.homeTeamAway ?? '-',
+      awayTeamHome: context?.awayTeamHome ?? '-',
+      awayTeamAway: context?.awayTeamAway ?? '-',
+      homeTeamFavorite: context?.homeTeamFavorite ?? '-',
+      awayTeamFavorite: context?.awayTeamFavorite ?? '-',
     },
     statsQuality: 'full',
   };

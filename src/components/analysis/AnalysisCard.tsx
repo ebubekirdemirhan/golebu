@@ -178,6 +178,23 @@ export default function AnalysisCard({ analysis, showTrend = true }: Props) {
               </p>
             </div>
           )}
+
+          {analysis.performanceContext && (
+            <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
+              <p className="text-[11px] text-gray-300">
+                {analysis.homeTeam.name} iç saha/deplasman: {analysis.performanceContext.homeTeamHome} / {analysis.performanceContext.homeTeamAway}
+              </p>
+              <p className="text-[11px] text-gray-300">
+                {analysis.awayTeam.name} iç saha/deplasman: {analysis.performanceContext.awayTeamHome} / {analysis.performanceContext.awayTeamAway}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                Favori olduğu maç karnesi ({analysis.homeTeam.name}): {analysis.performanceContext.homeTeamFavorite}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                Favori olduğu maç karnesi ({analysis.awayTeam.name}): {analysis.performanceContext.awayTeamFavorite}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

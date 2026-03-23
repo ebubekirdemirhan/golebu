@@ -35,6 +35,63 @@ function rankInStandings(data: LeagueStandingsResponse | null, teamId: number): 
   return getTeamStanding(data, teamId)?.rank ?? null;
 }
 
+function resultForTeam(match: Match, teamId: number): 'W' | 'D' | 'L' {
+  const isHome = match.homeTeam.id === teamId;
+  const gf = isHome ? (match.score.fullTime.home ?? 0) : (match.score.fullTime.away ?? 0);
+  const ga = isHome ? (match.score.fullTime.away ?? 0) : (match.score.fullTime.home ?? 0);
+  if (gf > ga) return 'W';
+  if (gf === ga) return 'D';
+  return 'L';
+}
+
+function recordString(results: Array<'W' | 'D' | 'L'>): string {
+  if (!results.length) return '-';
+  const w = results.filter((r) => r === 'W').length;
+  const d = results.filter((r) => r === 'D').length;
+  const l = results.filter((r) => r === 'L').length;
+  return `${w}G-${d}B-${l}M (${results.length} maç)`;
+}
+
+function venueRecord(matches: Match[], teamId: number, isHomeVenue: boolean): string {
+  const results = matches
+    .filter(
+      (m) =>
+        m.status === 'FINISHED' &&
+        m.score.fullTime.home !== null &&
+        (m.homeTeam.id === teamId) === isHomeVenue
+    )
+    .slice(0, 5)
+    .map((m) => resultForTeam(m, teamId));
+  return recordString(results);
+}
+
+function favoriteRecord(
+  matches: Match[],
+  teamId: number,
+  leagueCode: string,
+  standings: LeagueStandingsResponse | null
+): string {
+  const teamRank = rankInStandings(standings, teamId);
+  if (!teamRank) return '-';
+  const results = matches
+    .filter(
+      (m) =>
+        m.status === 'FINISHED' &&
+        m.score.fullTime.home !== null &&
+        m.competition.code === leagueCode
+    )
+    .slice(0, 8)
+    .flatMap((m) => {
+      const opp = m.homeTeam.id === teamId ? m.awayTeam : m.homeTeam;
+      const oppRank = rankInStandings(standings, opp.id);
+      if (!oppRank) return [];
+      // düşük sıra = daha güçlü. Team daha yukarıdaysa favori kabul et.
+      if (teamRank < oppRank) return [resultForTeam(m, teamId)];
+      return [];
+    });
+  return recordString(results);
+}
+
 function last5Opponents(
   matches: Match[],
   teamId: number,
@@ -124,6 +181,12 @@ async function analysisForMatch(match: Match): Promise<Analysis> {
       raceNote: race.note,
       homeOpponents,
       awayOpponents,
+      homeTeamHome: venueRecord(homeMatches, match.homeTeam.id, true),
+      homeTeamAway: venueRecord(homeMatches, match.homeTeam.id, false),
+      awayTeamHome: venueRecord(awayMatches, match.awayTeam.id, true),
+      awayTeamAway: venueRecord(awayMatches, match.awayTeam.id, false),
+      homeTeamFavorite: favoriteRecord(homeMatches, match.homeTeam.id, match.competition.code, standings),
+      awayTeamFavorite: favoriteRecord(awayMatches, match.awayTeam.id, match.competition.code, standings),
     });
   } catch {
     const a = generateMockAnalysis(match);
