@@ -274,6 +274,10 @@ export async function GET() {
 
   const sourceLabel =
     hasFd && hasAf ? 'football-data.org+api-football' : hasFd ? 'football-data.org' : 'api-football';
+  const message =
+    !hasAf && hasFd
+      ? 'API-Football kapalı görünüyor (Vercel env: API_FOOTBALL_KEY). Şu an sadece football-data kaynağı kullanılıyor.'
+      : undefined;
 
   return NextResponse.json({
     analyses,
@@ -281,5 +285,6 @@ export async function GET() {
     demo: false,
     source: sourceLabel,
     sources: { footballData: hasFd, apiFootball: hasAf },
+    message,
   });
 }

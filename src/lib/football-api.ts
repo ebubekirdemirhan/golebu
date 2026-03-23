@@ -70,7 +70,8 @@ async function fetchWithCache<T>(endpoint: string, ttlMinutes = 30): Promise<T> 
 
 /** Önce competitions= ile hedef ligleri sor; hata/boşsa genel /matches ile dene */
 async function fetchMatchesForWeek(today: string, weekEnd: string): Promise<Match[]> {
-  const base = `dateFrom=${today}&dateTo=${weekEnd}&status=SCHEDULED,LIVE,IN_PLAY`;
+  // football-data planlı maçları çoğunlukla TIMED olarak döner; TIMED'i dahil et.
+  const base = `dateFrom=${today}&dateTo=${weekEnd}&status=SCHEDULED,TIMED,LIVE,IN_PLAY`;
   const allCodes = SUPPORTED_LEAGUES.map((l) => l.code).join(',');
 
   const attempts = [
@@ -95,7 +96,13 @@ export async function getTodayMatches(): Promise<Match[]> {
     return [];
   }
   const today = new Date().toISOString().split('T')[0];
-  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  const daysAhead = (() => {
+    const raw = process.env.MATCH_DAYS_AHEAD;
+    const n = raw ? parseInt(raw, 10) : 7;
+    if (Number.isNaN(n)) return 7;
+    return Math.max(1, Math.min(14, n));
+  })();
+  const weekEnd = new Date(Date.now() + daysAhead * 86400000).toISOString().split('T')[0];
 
   return fetchMatchesForWeek(today, weekEnd);
 }
