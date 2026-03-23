@@ -185,16 +185,19 @@ export class ScrapeProvider implements MatchSourceProvider {
 
       const json = (await res.json()) as EspnResponse;
       const allow = allowedLeagueKeywords();
-      const matches = (json.events ?? [])
+      const baseMatches = (json.events ?? [])
         .map(normalizeEspnEvent)
         .filter((m): m is Match => Boolean(m))
-        .filter((m) => {
-          const leagueNorm = normalizeText(m.competition.name);
-          if (m.competition.code !== 'SCRAPE') return true;
-          return allow.some((k) => leagueNorm.includes(k));
-        })
-        .filter((m) => m.utcDate >= `${range.from}T00:00:00.000Z` && m.utcDate <= `${range.to}T23:59:59.999Z`)
-        .slice(0, 50);
+        .filter((m) => m.utcDate >= `${range.from}T00:00:00.000Z` && m.utcDate <= `${range.to}T23:59:59.999Z`);
+
+      const strictFiltered = baseMatches.filter((m) => {
+        const leagueNorm = normalizeText(m.competition.name);
+        if (m.competition.code !== 'SCRAPE') return true;
+        return allow.some((k) => leagueNorm.includes(k));
+      });
+
+      // Fail-safe: whitelist çok dar kalırsa boş dönmek yerine baz listeyi kullan.
+      const matches = (strictFiltered.length > 0 ? strictFiltered : baseMatches).slice(0, 50);
 
       return {
         source: this.name,
