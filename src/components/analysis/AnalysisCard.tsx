@@ -35,6 +35,14 @@ export default function AnalysisCard({ analysis, showTrend = true }: Props) {
     setMatchTime(date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
   }, [analysis.utcDate]);
 
+  const formatOpponents = (items?: Array<{ name: string; rank: number | null }>) => {
+    if (!items?.length) return '-';
+    return items
+      .map((o) => `${o.name} ${o.rank ? `(#${o.rank})` : '(#-)'} `)
+      .join(', ')
+      .trim();
+  };
+
   return (
     <div className={`bg-[#13132a] rounded-2xl border ${confidenceBorder[analysis.confidence]} overflow-hidden`}>
       {/* Header */}
@@ -140,6 +148,36 @@ export default function AnalysisCard({ analysis, showTrend = true }: Props) {
         <div className="mx-4 mb-3 flex items-center gap-2 bg-green-900/10 border border-green-500/20 rounded-lg p-2">
           <Zap className="w-3.5 h-3.5 text-green-400 shrink-0" />
           <p className="text-green-400 text-xs">En güçlü tahmin: <strong>{analysis.strongestPick}</strong></p>
+        </div>
+      )}
+
+      {(analysis.tableContext || analysis.last5Opponents) && (
+        <div className="mx-4 mb-3 bg-[#1a1a35] rounded-xl p-3">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-gray-400 text-[11px] uppercase tracking-wide">Lig Durumu</span>
+            {analysis.tableContext?.raceTag && analysis.tableContext.raceTag !== 'Bilinmiyor' && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300">
+                {analysis.tableContext.raceTag}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-300">
+            {analysis.homeTeam.name}: #{analysis.tableContext?.homeRank ?? '-'} • {analysis.awayTeam.name}: #{analysis.tableContext?.awayRank ?? '-'}
+          </p>
+          {analysis.tableContext?.note && (
+            <p className="text-[11px] text-gray-400 mt-1">{analysis.tableContext.note}</p>
+          )}
+
+          {(analysis.last5Opponents?.home?.length || analysis.last5Opponents?.away?.length) && (
+            <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
+              <p className="text-[11px] text-gray-400">
+                Son 5 rakip ({analysis.homeTeam.name}): {formatOpponents(analysis.last5Opponents?.home)}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                Son 5 rakip ({analysis.awayTeam.name}): {formatOpponents(analysis.last5Opponents?.away)}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

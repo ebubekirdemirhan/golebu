@@ -10,6 +10,36 @@ const API_KEY = process.env.FOOTBALL_DATA_API_KEY || '';
 // Basit in-memory cache
 const cache = new Map<string, { data: unknown; expires: number }>();
 
+export interface StandingRow {
+  position: number;
+  team: { id: number; name: string };
+  points: number;
+  goalDifference: number;
+  won: number;
+  draw: number;
+  lost: number;
+}
+
+export interface LeagueStandingsResponse {
+  competition?: { code: string; name: string };
+  season?: { currentMatchday?: number };
+  standings?: Array<{
+    type: string;
+    table: StandingRow[];
+  }>;
+}
+
+export interface TeamStandingContext {
+  rank: number;
+  points: number;
+  goalDifference: number;
+}
+
+export interface RaceContext {
+  tag: 'Sampiyonluk' | 'Avrupa' | 'Orta Sira' | 'Kume Hatti';
+  note: string;
+}
+
 async function fetchWithCache<T>(endpoint: string, ttlMinutes = 30): Promise<T> {
   const cacheKey = endpoint;
   const now = Date.now();
@@ -97,9 +127,9 @@ export async function getTeamMatches(teamId: number, limit = 10): Promise<Match[
   }
 }
 
-export async function getLeagueStandings(leagueCode: string): Promise<unknown> {
+export async function getLeagueStandings(leagueCode: string): Promise<LeagueStandingsResponse | null> {
   try {
-    const data = await fetchWithCache<unknown>(
+    const data = await fetchWithCache<LeagueStandingsResponse>(
       `/competitions/${leagueCode}/standings`,
       120
     );
@@ -107,6 +137,45 @@ export async function getLeagueStandings(leagueCode: string): Promise<unknown> {
   } catch {
     return null;
   }
+}
+
+function pickLeagueTable(data: LeagueStandingsResponse | null): StandingRow[] {
+  if (!data?.standings?.length) return [];
+  const preferred = data.standings.find((s) => s.type === 'TOTAL') ?? data.standings[0];
+  return preferred?.table ?? [];
+}
+
+export function getTeamStanding(data: LeagueStandingsResponse | null, teamId: number): TeamStandingContext | null {
+  const table = pickLeagueTable(data);
+  const row = table.find((r) => r.team.id === teamId);
+  if (!row) return null;
+  return {
+    rank: row.position,
+    points: row.points,
+    goalDifference: row.goalDifference,
+  };
+}
+
+export function getRaceContext(data: LeagueStandingsResponse | null, rank: number | null): RaceContext | null {
+  const table = pickLeagueTable(data);
+  if (!table.length || !rank) return null;
+
+  const size = table.length;
+  const leaderPts = table[0]?.points ?? 0;
+  const row = table.find((r) => r.position === rank);
+  if (!row) return null;
+
+  if (rank <= 2) {
+    const gap = Math.max(0, leaderPts - row.points);
+    return { tag: 'Sampiyonluk', note: `Liderin ${gap} puan gerisi.` };
+  }
+  if (rank <= 6) {
+    return { tag: 'Avrupa', note: 'Avrupa potasi yakininda.' };
+  }
+  if (rank >= Math.max(16, size - 2)) {
+    return { tag: 'Kume Hatti', note: 'Kume dusme hattina yakin.' };
+  }
+  return { tag: 'Orta Sira', note: 'Ligde orta sirada konumlanmis.' };
 }
 
 export function calculateTeamStats(matches: Match[], teamId: number): TeamStats {

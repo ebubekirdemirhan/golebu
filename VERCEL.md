@@ -12,7 +12,9 @@
 |----------|----------|
 | `FOOTBALL_DATA_API_KEY` | [football-data.org](https://www.football-data.org/client/register) — **birincil** maç/analiz kaynağı (isteğe bağlı ama önerilir) |
 | `API_FOOTBALL_KEY` | [API-Football / api-sports.io](https://www.api-football.com/) — **ikincil** fikstür (TFF 1–2, Suudi, BAE, Katar). Ücretsiz planda **günlük düşük kota**; her sayfa yükünde lig başına istek gider. |
-| `API_FOOTBALL_LEAGUE_IDS` | (İsteğe bağlı) Virgülle lig ID’leri. Yoksa varsayılan: `205,206,307,301,233`. |
+| `API_FOOTBALL_LEAGUE_IDS` | (İsteğe bağlı) Virgülle lig ID’leri. Yoksa varsayılan: `204,205,206,307,301,233`. |
+| `MAX_MATCHES` | (İsteğe bağlı) `/api/matches` üst sınırı. Varsayılan `20`, önerilen aralık `10-30`. |
+| `MAX_SECONDARY` | (İsteğe bağlı) API-Football için ayrılan slot. Varsayılan `8`. |
 | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) — AI asistan için |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` ile üret |
 | `NEXTAUTH_URL` | Production URL: `https://senin-proje.vercel.app` (custom domain varsa o) |

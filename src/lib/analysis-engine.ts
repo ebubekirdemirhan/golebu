@@ -190,7 +190,19 @@ export function calcValueBet(
 /**
  * Ana analiz fonksiyonu - bir maç için tam analiz üretir
  */
-export function generateAnalysis(match: Match, homeStats: TeamStats, awayStats: TeamStats): Analysis {
+export function generateAnalysis(
+  match: Match,
+  homeStats: TeamStats,
+  awayStats: TeamStats,
+  context?: {
+    homeRank?: number | null;
+    awayRank?: number | null;
+    raceTag?: 'Sampiyonluk' | 'Avrupa' | 'Orta Sira' | 'Kume Hatti' | 'Bilinmiyor';
+    raceNote?: string;
+    homeOpponents?: Array<{ name: string; rank: number | null }>;
+    awayOpponents?: Array<{ name: string; rank: number | null }>;
+  }
+): Analysis {
   const over25 = calcOver25(homeStats.avgGoalsScored, awayStats.avgGoalsScored);
   const btts = calcBTTS(
     homeStats.scoringRate,
@@ -259,6 +271,16 @@ export function generateAnalysis(match: Match, homeStats: TeamStats, awayStats: 
     valueBet,
     strongestPick: strongest.pct >= 65 ? `${strongest.name} (%${strongest.pct})` : '',
     analysisNote: note.trim(),
+    tableContext: {
+      homeRank: context?.homeRank ?? null,
+      awayRank: context?.awayRank ?? null,
+      raceTag: context?.raceTag ?? 'Bilinmiyor',
+      note: context?.raceNote ?? '',
+    },
+    last5Opponents: {
+      home: context?.homeOpponents ?? [],
+      away: context?.awayOpponents ?? [],
+    },
     statsQuality: 'full',
   };
 }

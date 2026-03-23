@@ -83,6 +83,17 @@ export interface Analysis {
   strongestPick: string;
   analysisNote: string;
 
+  tableContext?: {
+    homeRank: number | null;
+    awayRank: number | null;
+    raceTag: 'Sampiyonluk' | 'Avrupa' | 'Orta Sira' | 'Kume Hatti' | 'Bilinmiyor';
+    note: string;
+  };
+  last5Opponents?: {
+    home: Array<{ name: string; rank: number | null }>;
+    away: Array<{ name: string; rank: number | null }>;
+  };
+
   /** Tam istatistik (football-data) vs tahmini model (ikincil kaynak) */
   statsQuality?: 'full' | 'estimated' | 'demo';
 }

@@ -4,6 +4,10 @@ import {
   getTeamMatches,
   calculateTeamStats,
   getMockMatches,
+  getLeagueStandings,
+  getTeamStanding,
+  getRaceContext,
+  type LeagueStandingsResponse,
 } from '@/lib/football-api';
 import { getApiFootballMatchesInRange, hasApiFootballKey } from '@/lib/api-football';
 import { mergeWithReservedSecondarySlots } from '@/lib/match-merge';
@@ -18,6 +22,59 @@ export const dynamic = 'force-dynamic';
  * Çok yükseltmek football-data dakika kotasını (ücretsiz plan) zorlayabilir.
  */
 const MAX_MATCHES = 20;
+const MAX_SECONDARY = 8;
+
+function envInt(name: string, fallback: number, min: number, max: number): number {
+  const raw = process.env[name];
+  const n = raw ? parseInt(raw, 10) : fallback;
+  if (Number.isNaN(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function rankInStandings(data: LeagueStandingsResponse | null, teamId: number): number | null {
+  return getTeamStanding(data, teamId)?.rank ?? null;
+}
+
+function last5Opponents(
+  matches: Match[],
+  teamId: number,
+  leagueCode: string,
+  standings: LeagueStandingsResponse | null
+): Array<{ name: string; rank: number | null }> {
+  return matches
+    .filter(
+      (m) =>
+        m.status === 'FINISHED' &&
+        m.score.fullTime.home !== null &&
+        m.competition.code === leagueCode
+    )
+    .slice(0, 5)
+    .map((m) => {
+      const opponent = m.homeTeam.id === teamId ? m.awayTeam : m.homeTeam;
+      return {
+        name: opponent.name,
+        rank: rankInStandings(standings, opponent.id),
+      };
+    });
+}
+
+type RaceTag = 'Sampiyonluk' | 'Avrupa' | 'Orta Sira' | 'Kume Hatti' | 'Bilinmiyor';
+function pickRaceTag(
+  home: { tag: 'Sampiyonluk' | 'Avrupa' | 'Orta Sira' | 'Kume Hatti'; note: string } | null,
+  away: { tag: 'Sampiyonluk' | 'Avrupa' | 'Orta Sira' | 'Kume Hatti'; note: string } | null
+): { tag: RaceTag; note: string } {
+  const priority: Record<'Sampiyonluk' | 'Avrupa' | 'Orta Sira' | 'Kume Hatti', number> = {
+    'Kume Hatti': 4,
+    Sampiyonluk: 3,
+    Avrupa: 2,
+    'Orta Sira': 1,
+  };
+  if (!home && !away) return { tag: 'Bilinmiyor', note: '' };
+  if (!home) return { tag: away!.tag, note: `${away!.note} (Deplasman)` };
+  if (!away) return { tag: home.tag, note: `${home.note} (Ev sahibi)` };
+  if (priority[home.tag] >= priority[away.tag]) return { tag: home.tag, note: `${home.note} (Ev sahibi)` };
+  return { tag: away.tag, note: `${away.note} (Deplasman)` };
+}
 
 function hasFootballDataKey(): boolean {
   const k = process.env.FOOTBALL_DATA_API_KEY;
@@ -31,18 +88,43 @@ async function analysisForMatch(match: Match): Promise<Analysis> {
   }
 
   try {
-    const [homeMatches, awayMatches] = await Promise.all([
+    const [homeMatches, awayMatches, standings] = await Promise.all([
       getTeamMatches(match.homeTeam.id, 10),
       getTeamMatches(match.awayTeam.id, 10),
+      getLeagueStandings(match.competition.code),
     ]);
     const homeStats = calculateTeamStats(homeMatches, match.homeTeam.id);
     const awayStats = calculateTeamStats(awayMatches, match.awayTeam.id);
+    const homeStanding = getTeamStanding(standings, match.homeTeam.id);
+    const awayStanding = getTeamStanding(standings, match.awayTeam.id);
+    const homeRace = getRaceContext(standings, homeStanding?.rank ?? null);
+    const awayRace = getRaceContext(standings, awayStanding?.rank ?? null);
+    const race = pickRaceTag(homeRace, awayRace);
+    const homeOpponents = last5Opponents(
+      homeMatches,
+      match.homeTeam.id,
+      match.competition.code,
+      standings
+    );
+    const awayOpponents = last5Opponents(
+      awayMatches,
+      match.awayTeam.id,
+      match.competition.code,
+      standings
+    );
 
     if (homeStats.last5.length < 2 || awayStats.last5.length < 2) {
       const a = generateMockAnalysis(match);
       return { ...a, statsQuality: 'estimated' };
     }
-    return generateAnalysis(match, homeStats, awayStats);
+    return generateAnalysis(match, homeStats, awayStats, {
+      homeRank: homeStanding?.rank ?? null,
+      awayRank: awayStanding?.rank ?? null,
+      raceTag: race.tag,
+      raceNote: race.note,
+      homeOpponents,
+      awayOpponents,
+    });
   } catch {
     const a = generateMockAnalysis(match);
     return { ...a, statsQuality: 'estimated' };
@@ -89,8 +171,9 @@ export async function GET() {
     secondary = await getApiFootballMatchesInRange(today, weekEnd);
   }
 
-  /* İkincil kaynağa en fazla 8 slot (API-F körfez/Türkiye maçları görünsün) */
-  let merged = mergeWithReservedSecondarySlots(primary, secondary, MAX_MATCHES, 8);
+  const maxMatches = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
+  const maxSecondary = envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20);
+  let merged = mergeWithReservedSecondarySlots(primary, secondary, maxMatches, maxSecondary);
   merged = merged.filter(
     (m) =>
       m.dataSource === 'api-football' ||
