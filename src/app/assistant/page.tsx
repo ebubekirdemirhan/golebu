@@ -17,6 +17,7 @@ export default function AssistantPage() {
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [contextInfo, setContextInfo] = useState<{ matches: number; source: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +48,12 @@ export default function AssistantPage() {
         body: JSON.stringify({ message: text }),
       });
       const data = await res.json();
+      if (typeof data.contextMatches === 'number') {
+        setContextInfo({
+          matches: data.contextMatches,
+          source: data.contextSource ?? 'none',
+        });
+      }
       const botMsg: ChatMessage = {
         role: 'assistant',
         content: data.response ?? 'Yanıt alınamadı.',
@@ -77,6 +84,12 @@ export default function AssistantPage() {
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               Çevrimiçi
             </p>
+            {contextInfo && (
+              <p className="text-[11px] text-gray-400 mt-1">
+                Canlı veri kullanıldı: <span className="text-green-300">{contextInfo.matches} maç</span>
+                {' '}• Kaynak: <span className="text-gray-300">{contextInfo.source}</span>
+              </p>
+            )}
           </div>
         </div>
       </div>
