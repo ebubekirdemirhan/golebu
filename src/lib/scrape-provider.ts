@@ -37,6 +37,67 @@ function deterministicTeamId(name: string): number {
   return 900_000_000 + (hash32(name) % 50_000_000);
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+/** YYYY-MM-DD → YYYYMMDD (ESPN dates parametresi) */
+function toEspnYyyymmdd(isoDay: string): string {
+  return isoDay.replace(/-/g, '');
+}
+
+function parseYmd(isoDay: string): { y: number; m: number; d: number } {
+  const [y, m, d] = isoDay.split('-').map((x) => parseInt(x, 10));
+  return { y, m, d };
+}
+
+function yyyymmddUtc(d: Date): string {
+  return `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}`;
+}
+
+/**
+ * Tarihsiz scoreboard genelde son turu döndürür; gelecek turlar çoğu ligde yalnızca ?dates= ile gelir.
+ * Aralık uçları + Cmt/Paz + Salı/Çarşamba (UEFA / haftaiçi) — tekrarsız YYYYMMDD.
+ */
+function scoreboardProbeYyyymmdd(range: FetchRange, maxWeeksPerKind: number): string[] {
+  const set = new Set<string>();
+  set.add(toEspnYyyymmdd(range.from));
+  set.add(toEspnYyyymmdd(range.to));
+
+  const startParts = parseYmd(range.from);
+  const endParts = parseYmd(range.to);
+  const startMs = Date.UTC(startParts.y, startParts.m - 1, startParts.d, 12, 0, 0);
+  const endMs = Date.UTC(endParts.y, endParts.m - 1, endParts.d, 12, 0, 0);
+
+  // Cumartesi + Pazar
+  let t = startMs;
+  let dow = new Date(t).getUTCDay();
+  t += ((6 - dow + 7) % 7) * 86400000;
+  let weeks = 0;
+  while (t <= endMs && weeks < maxWeeksPerKind) {
+    set.add(yyyymmddUtc(new Date(t)));
+    const sunMs = t + 86400000;
+    if (sunMs <= endMs) set.add(yyyymmddUtc(new Date(sunMs)));
+    t += 7 * 86400000;
+    weeks++;
+  }
+
+  // Salı + Çarşamba (Şampiyonlar / konferans vb.)
+  t = startMs;
+  dow = new Date(t).getUTCDay();
+  t += ((2 - dow + 7) % 7) * 86400000;
+  weeks = 0;
+  while (t <= endMs && weeks < maxWeeksPerKind) {
+    set.add(yyyymmddUtc(new Date(t)));
+    const wedMs = t + 86400000;
+    if (wedMs <= endMs) set.add(yyyymmddUtc(new Date(wedMs)));
+    t += 7 * 86400000;
+    weeks++;
+  }
+
+  return Array.from(set);
+}
+
 function espnStateToStatus(state?: string, completed?: boolean): Match['status'] {
   if (completed) return 'FINISHED';
   if (!state) return 'SCHEDULED';
@@ -97,8 +158,65 @@ function inRange(iso: string, range: FetchRange): boolean {
   return t >= start && t <= end;
 }
 
+/** Tahmin listesi: bitmiş maçları çıkar (tarihsiz scoreboard eski tur döndürür). */
+function isUpcomingForPrediction(m: Match): boolean {
+  return m.status !== 'FINISHED';
+}
+
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
+
+function readProbeWeeks(): number {
+  const raw = process.env.ESPN_SCOREBOARD_WEEKEND_WEEKS;
+  const n = raw ? parseInt(raw, 10) : 5;
+  if (Number.isNaN(n)) return 5;
+  return Math.max(0, Math.min(12, n));
+}
+
+function readLeagueChunkSize(): number {
+  const raw = process.env.ESPN_SCRAPE_LEAGUE_CONCURRENCY;
+  const n = raw ? parseInt(raw, 10) : 4;
+  if (Number.isNaN(n)) return 4;
+  return Math.max(1, Math.min(22, n));
+}
+
+async function fetchEspn(url: string): Promise<EspnResponse> {
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: { 'user-agent': UA },
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return (await res.json()) as EspnResponse;
+}
+
+async function fetchLeagueScoreboardEvents(cfg: EspnLeagueConfig, range: FetchRange): Promise<{
+  events: EspnEvent[];
+  requestCount: number;
+}> {
+  const base = scoreboardUrl(cfg.slug);
+  const probes = scoreboardProbeYyyymmdd(range, readProbeWeeks());
+  const urls = [base, ...probes.map((d) => `${base}?dates=${d}`)];
+
+  const settled = await Promise.allSettled(urls.map((u) => fetchEspn(u)));
+  const byId = new Map<string, EspnEvent>();
+  for (const s of settled) {
+    if (s.status !== 'fulfilled') continue;
+    for (const ev of s.value.events ?? []) {
+      const rawId = ev.id ?? ev.competitions?.[0]?.id;
+      if (rawId) {
+        byId.set(`id:${rawId}`, ev);
+        continue;
+      }
+      const c = ev.competitions?.[0];
+      const h = c?.competitors?.find((x) => x.homeAway === 'home')?.team?.displayName ?? '';
+      const a = c?.competitors?.find((x) => x.homeAway === 'away')?.team?.displayName ?? '';
+      byId.set(`sym:${ev.date}|${h}|${a}`, ev);
+    }
+  }
+  return { events: Array.from(byId.values()), requestCount: urls.length };
+}
 
 export class ScrapeProvider implements MatchSourceProvider {
   name = 'scrape' as const;
@@ -106,24 +224,29 @@ export class ScrapeProvider implements MatchSourceProvider {
   async fetch(range: FetchRange): Promise<SourceFetchResult> {
     const started = Date.now();
     const leagues = getActiveEspnLeagues();
+    const chunk = readLeagueChunkSize();
+    const settled: PromiseSettledResult<{
+      cfg: EspnLeagueConfig;
+      matches: Match[];
+      rawEventCount: number;
+      requestCount: number;
+    }>[] = [];
 
-    const settled = await Promise.allSettled(
-      leagues.map(async (cfg) => {
-        const res = await fetch(scoreboardUrl(cfg.slug), {
-          cache: 'no-store',
-          headers: { 'user-agent': UA },
-        });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const json = (await res.json()) as EspnResponse;
-        const matches = (json.events ?? [])
-          .map((ev) => normalizeEspnEvent(ev, cfg))
-          .filter((m): m is Match => Boolean(m))
-          .filter((m) => inRange(m.utcDate, range));
-        return { cfg, matches, rawEventCount: json.events?.length ?? 0 };
-      })
-    );
+    for (let i = 0; i < leagues.length; i += chunk) {
+      const slice = leagues.slice(i, i + chunk);
+      const part = await Promise.allSettled(
+        slice.map(async (cfg) => {
+          const { events, requestCount } = await fetchLeagueScoreboardEvents(cfg, range);
+          const matches = events
+            .map((ev) => normalizeEspnEvent(ev, cfg))
+            .filter((m): m is Match => Boolean(m))
+            .filter((m) => inRange(m.utcDate, range))
+            .filter(isUpcomingForPrediction);
+          return { cfg, matches, rawEventCount: events.length, requestCount };
+        })
+      );
+      settled.push(...part);
+    }
 
     const perLeague: Array<{ slug: string; ok: boolean; count: number; error?: string }> = [];
     const allMatches: Match[] = [];
@@ -146,7 +269,7 @@ export class ScrapeProvider implements MatchSourceProvider {
             slug: cfg.slug,
             ok: true,
             count: 0,
-            error: 'aralik disi',
+            error: 'aralik_disi_veya_bitmis',
           };
         }
       } else {
@@ -160,7 +283,7 @@ export class ScrapeProvider implements MatchSourceProvider {
     const failed = perLeague.filter((p) => !p.ok).length;
     const latencyMs = Date.now() - started;
 
-    const healthMsg = `ESPN lig bazlı: ${okLeagues} lig maç içeriyor, ${emptyOk} lig boş (veya aralık dışı), ${failed} lig istek hatası.`;
+    const healthMsg = `ESPN (tarih taramalı): ${okLeagues} lig maç içeriyor, ${emptyOk} lig boş, ${failed} hata. Prob haftası: ${readProbeWeeks()}.`;
 
     return {
       source: this.name,
@@ -170,7 +293,7 @@ export class ScrapeProvider implements MatchSourceProvider {
         code: allMatches.length > 0 ? 'OK' : okLeagues === 0 && failed > 0 ? 'SCRAPE_BLOCK' : 'NO_FIXTURE',
         matchCount: allMatches.length,
         latencyMs,
-        message: allMatches.length > 0 ? healthMsg : `${healthMsg} Toplam ${leagues.length} lig sorgulandı.`,
+        message: allMatches.length > 0 ? healthMsg : `${healthMsg} Toplam ${leagues.length} lig.`,
         lastSuccessAt: allMatches.length > 0 ? new Date().toISOString() : undefined,
       },
     };

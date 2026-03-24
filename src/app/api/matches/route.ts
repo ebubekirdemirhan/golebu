@@ -273,7 +273,7 @@ export async function GET() {
     fallbackRange: daysAheadFallback > daysAheadPrimary ? fallbackRange : undefined,
     scrapeFallbackFetchRange,
     sourceTimeoutMs: envInt('SOURCE_TIMEOUT_MS', 9000, 1000, 30000),
-    scrapeTimeoutMs: envInt('SCRAPE_TIMEOUT_MS', 8000, 1000, 30000),
+    scrapeTimeoutMs: envInt('SCRAPE_TIMEOUT_MS', 28000, 5000, 60000),
     sourceRetryCount: envInt('SOURCE_RETRY_COUNT', 2, 1, 4),
     enableScraping,
   });

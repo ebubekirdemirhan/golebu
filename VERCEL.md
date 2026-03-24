@@ -23,7 +23,9 @@
 | `ENABLE_SCRAPING` | (İsteğe bağlı) Scrape fallback aktif/pasif (`true/false`). Varsayılan `true`. |
 | `SOURCE_TIMEOUT_MS` | (İsteğe bağlı) Kaynak başına timeout (ms). Varsayılan `9000`. |
 | `SOURCE_RETRY_COUNT` | (İsteğe bağlı) Kaynak hata olursa tekrar deneme sayısı. Varsayılan `2`. |
-| `SCRAPE_TIMEOUT_MS` | (İsteğe bağlı) Scrape sağlayıcısı timeout (ms). Varsayılan `8000`. |
+| `SCRAPE_TIMEOUT_MS` | (İsteğe bağlı) Scrape (ESPN çoklu tarih) timeout (ms). Varsayılan `28000`. |
+| `ESPN_SCOREBOARD_WEEKEND_WEEKS` | (İsteğe bağlı) Kaç hafta ileri Cmt/Paz + Salı/Çar için `dates=` taranır. Varsayılan `5`, üst sınır `12`. |
+| `ESPN_SCRAPE_LEAGUE_CONCURRENCY` | (İsteğe bağlı) Aynı anda kaç lig paralel işlenir (her ligde çoklu tarih isteği var). Varsayılan `4`. |
 | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) — AI asistan için |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` ile üret |
 | `NEXTAUTH_URL` | Production URL: `https://senin-proje.vercel.app` (custom domain varsa o) |
