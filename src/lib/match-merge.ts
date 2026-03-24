@@ -86,12 +86,13 @@ export function mergeWithReservedSecondarySlots(
  * Çok-kaynaklı senaryoda kalite + dedupe:
  * - Aynı fikstürde yüksek kalite skorlu kayıt tutulur
  * - Toplamda maxTotal kadar maç döner
- * - İkincil (api-football/scrape) için maxSecondary kadar alan ayrılır
+ * - API-Football ve ESPN (scrape) ayrı kotalar; API boşken scrape tek başına doldurabilir
  */
 export function mergeByQualityWithDedupe(
   items: Match[],
   maxTotal: number,
-  maxSecondary: number = MAX_SECONDARY_DEFAULT
+  maxApiFootball: number = MAX_SECONDARY_DEFAULT,
+  maxScrape: number = MAX_SECONDARY_DEFAULT
 ): Match[] {
   const bestByKey = new Map<string, Match>();
   for (const m of items) {
@@ -109,8 +110,15 @@ export function mergeByQualityWithDedupe(
   });
 
   const primary = all.filter((m) => m.dataSource === 'football-data' || !m.dataSource);
-  const secondary = all.filter((m) => m.dataSource !== 'football-data' && m.dataSource !== undefined);
-  const secTake = Math.min(secondary.length, maxSecondary, maxTotal);
-  const primTake = Math.min(primary.length, maxTotal - secTake);
-  return [...primary.slice(0, primTake), ...secondary.slice(0, secTake)];
+  const apiFb = all.filter((m) => m.dataSource === 'api-football');
+  const scrape = all.filter((m) => m.dataSource === 'scrape');
+
+  let remaining = maxTotal;
+  const primTake = Math.min(primary.length, remaining);
+  remaining -= primTake;
+  const apiTake = Math.min(apiFb.length, maxApiFootball, remaining);
+  remaining -= apiTake;
+  const scrTake = Math.min(scrape.length, maxScrape, remaining);
+
+  return [...primary.slice(0, primTake), ...apiFb.slice(0, apiTake), ...scrape.slice(0, scrTake)];
 }

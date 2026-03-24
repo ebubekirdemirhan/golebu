@@ -15,11 +15,12 @@
 | `API_FOOTBALL_LEAGUE_IDS` | (İsteğe bağlı) Virgülle lig ID’leri. Yoksa varsayılan: `203,204,205,307,301,305`. |
 | `MAX_MATCHES` | (İsteğe bağlı) `/api/matches` üst sınırı. Varsayılan `20`, önerilen aralık `10-30`. |
 | `MAX_SECONDARY` | (İsteğe bağlı) API-Football için ayrılan slot. Varsayılan `8`. |
+| `MAX_SCRAPE` | (İsteğe bağlı) ESPN lig bazlı scrape kotası; `MAX_MATCHES` içinde football-data ve API-Football sonrası kalan pay. Varsayılan `35`. |
+| `SCRAPE_LEAGUES` | (İsteğe bağlı) Virgülle ESPN slug’lar (`eng.1`, `tur.1`, `uefa.champions`, …). Boşsa ~20 liglik varsayılan liste kullanılır. |
 | `ENABLE_SCRAPING` | (İsteğe bağlı) Scrape fallback aktif/pasif (`true/false`). Varsayılan `true`. |
 | `SOURCE_TIMEOUT_MS` | (İsteğe bağlı) Kaynak başına timeout (ms). Varsayılan `9000`. |
 | `SOURCE_RETRY_COUNT` | (İsteğe bağlı) Kaynak hata olursa tekrar deneme sayısı. Varsayılan `2`. |
 | `SCRAPE_TIMEOUT_MS` | (İsteğe bağlı) Scrape sağlayıcısı timeout (ms). Varsayılan `8000`. |
-| `SCRAPE_ALLOWED_LEAGUE_KEYWORDS` | (İsteğe bağlı) Virgülle lig anahtar kelimeleri; scrape sadece bu kelimelerle eşleşen ligleri alır. |
 | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) — AI asistan için |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` ile üret |
 | `NEXTAUTH_URL` | Production URL: `https://senin-proje.vercel.app` (custom domain varsa o) |

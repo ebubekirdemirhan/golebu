@@ -30,6 +30,7 @@ export const SUPPORTED_LEAGUES: LeagueEntry[] = [
 
   // Türkiye — TFF 1./2. Lig: football-data’da yalnızca Süper Lig listelenir; 2. Lig bu API’de yok
   { code: 'TSL', filterLabel: 'Süper Lig', name: 'Turkey - Süper Lig', flag: '🇹🇷' },
+  { code: 'TFF1', filterLabel: 'TFF 1. Lig', name: 'Turkey - TFF 1. Lig', flag: '🇹🇷' },
 
   // Diğer güçlü ligler
   { code: 'PPL', filterLabel: 'Portekiz', name: 'Portugal - Primeira Liga', flag: '🇵🇹' },
@@ -75,6 +76,14 @@ export const SECONDARY_LEAGUES_FOR_FILTERS: LeagueEntry[] = [
   { code: 'AF305', filterLabel: 'Katar', name: 'Qatar Stars League', flag: '🇶🇦' },
 ];
 
+/** ESPN’den bilinmeyen slug / eşleşmeyen ligler */
+export const SCRAPE_EXTRA_FILTER: LeagueEntry = {
+  code: 'SCRAPE',
+  filterLabel: 'Diğer (ESPN)',
+  name: 'ESPN — diğer ligler',
+  flag: '🌐',
+};
+
 /** Filtre UI + izin verilen tüm competition.code değerleri */
-export const ALL_LEAGUE_FILTERS = [...SUPPORTED_LEAGUES, ...SECONDARY_LEAGUES_FOR_FILTERS];
+export const ALL_LEAGUE_FILTERS = [...SUPPORTED_LEAGUES, ...SECONDARY_LEAGUES_FOR_FILTERS, SCRAPE_EXTRA_FILTER];
 export const ALL_LEAGUE_CODES = new Set(ALL_LEAGUE_FILTERS.map((l) => l.code));

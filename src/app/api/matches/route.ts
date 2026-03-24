@@ -22,6 +22,8 @@ export const dynamic = 'force-dynamic';
  */
 const MAX_MATCHES = 20;
 const MAX_SECONDARY = 8;
+/** ESPN lig bazlı scrape — API’ler boşken doldurma payı */
+const MAX_SCRAPE = 35;
 
 function envInt(name: string, fallback: number, min: number, max: number): number {
   const raw = process.env[name];
@@ -253,11 +255,13 @@ export async function GET() {
   }
   const maxMatches = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
   const maxSecondary = envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20);
+  const maxScrape = envInt('MAX_SCRAPE', MAX_SCRAPE, 0, 50);
   const orchestrated = await orchestrateMatches({
     hasFootballData: hasFd,
     hasApiFootball: hasAf,
     maxMatches,
     maxSecondary,
+    maxScrape,
     primaryRange,
     fallbackRange: daysAheadFallback > daysAheadPrimary ? fallbackRange : undefined,
     sourceTimeoutMs: envInt('SOURCE_TIMEOUT_MS', 9000, 1000, 30000),

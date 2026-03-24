@@ -9,7 +9,10 @@ type OrchestratorOptions = {
   hasFootballData: boolean;
   hasApiFootball: boolean;
   maxMatches: number;
+  /** API-Football için ayrılan slot (football-data sonrası) */
   maxSecondary: number;
+  /** ESPN / scrape için ayrılan slot */
+  maxScrape: number;
   primaryRange: FetchRange;
   fallbackRange?: FetchRange;
   sourceTimeoutMs: number;
@@ -167,7 +170,8 @@ export async function orchestrateMatches(options: OrchestratorOptions): Promise<
   let merged = mergeByQualityWithDedupe(
     allResults.flatMap((r) => r.matches),
     options.maxMatches,
-    options.maxSecondary
+    options.maxSecondary,
+    options.maxScrape
   );
 
   if (merged.length === 0 && options.fallbackRange) {
@@ -203,7 +207,8 @@ export async function orchestrateMatches(options: OrchestratorOptions): Promise<
     merged = mergeByQualityWithDedupe(
       fallbackResults.flatMap((r) => r.matches),
       options.maxMatches,
-      options.maxSecondary
+      options.maxSecondary,
+      options.maxScrape
     );
   }
 
