@@ -11,6 +11,7 @@ import {
 } from '@/lib/football-api';
 import { hasApiFootballKey } from '@/lib/api-football';
 import { orchestrateMatches } from '@/lib/match-orchestrator';
+import { expandFetchRange } from '@/lib/source-contract';
 import { generateAnalysis, generateMockAnalysis } from '@/lib/analysis-engine';
 import type { Analysis, Match, MatchDiagnostics, OverallStats } from '@/lib/types';
 
@@ -256,6 +257,11 @@ export async function GET() {
   const maxMatches = envInt('MAX_MATCHES', MAX_MATCHES, 5, 50);
   const maxSecondary = envInt('MAX_SECONDARY', MAX_SECONDARY, 0, 20);
   const maxScrape = envInt('MAX_SCRAPE', MAX_SCRAPE, 0, 50);
+  const scrapePastDays = envInt('SCRAPE_INCLUDE_PAST_DAYS', 1, 0, 7);
+  const scrapeExtraAhead = envInt('SCRAPE_EXTRA_DAYS_AHEAD', 14, 0, 45);
+  const scrapeFetchRange = expandFetchRange(primaryRange, scrapePastDays, scrapeExtraAhead);
+  const scrapeFallbackFetchRange =
+    daysAheadFallback > daysAheadPrimary ? expandFetchRange(fallbackRange, scrapePastDays, scrapeExtraAhead) : undefined;
   const orchestrated = await orchestrateMatches({
     hasFootballData: hasFd,
     hasApiFootball: hasAf,
@@ -263,13 +269,17 @@ export async function GET() {
     maxSecondary,
     maxScrape,
     primaryRange,
+    scrapeFetchRange,
     fallbackRange: daysAheadFallback > daysAheadPrimary ? fallbackRange : undefined,
+    scrapeFallbackFetchRange,
     sourceTimeoutMs: envInt('SOURCE_TIMEOUT_MS', 9000, 1000, 30000),
     scrapeTimeoutMs: envInt('SCRAPE_TIMEOUT_MS', 8000, 1000, 30000),
     sourceRetryCount: envInt('SOURCE_RETRY_COUNT', 2, 1, 4),
     enableScraping,
   });
-  const merged = orchestrated.matches;
+  const merged = [...orchestrated.matches].sort(
+    (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
+  );
   const diagnostics = orchestrated.diagnostics;
   const apiPlanBlocked = diagnostics.sourceHealth.some((h) => h.source === 'api-football' && h.code === 'PLAN_BLOCK');
 

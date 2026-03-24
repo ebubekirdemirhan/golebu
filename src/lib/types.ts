@@ -155,6 +155,9 @@ export interface MatchDiagnostics {
     primaryTo: string;
     fallbackFrom?: string;
     fallbackTo?: string;
+    /** ESPN (scrape) isteğinde kullanılan genişletilmiş aralık */
+    scrapeFetchFrom?: string;
+    scrapeFetchTo?: string;
   };
 }
 

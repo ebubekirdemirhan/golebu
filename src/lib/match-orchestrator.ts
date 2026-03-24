@@ -3,7 +3,7 @@ import { getApiFootballMatchesInRange, hasApiFootballKey } from './api-football'
 import { ScrapeProvider } from './scrape-provider';
 import { mergeByQualityWithDedupe } from './match-merge';
 import type { Match, MatchDiagnostics, SourceHealth } from './types';
-import type { FetchRange, SourceFetchResult } from './source-contract';
+import { expandFetchRange, type FetchRange, type SourceFetchResult } from './source-contract';
 
 type OrchestratorOptions = {
   hasFootballData: boolean;
@@ -14,7 +14,10 @@ type OrchestratorOptions = {
   /** ESPN / scrape için ayrılan slot */
   maxScrape: number;
   primaryRange: FetchRange;
+  /** ESPN çekim aralığı; yoksa primary + varsayılan genişletme (1 gün geri, 14 gün ileri) */
+  scrapeFetchRange?: FetchRange;
   fallbackRange?: FetchRange;
+  scrapeFallbackFetchRange?: FetchRange;
   sourceTimeoutMs: number;
   scrapeTimeoutMs: number;
   sourceRetryCount: number;
@@ -133,8 +136,16 @@ async function runOne(
   }
 }
 
+const DEFAULT_SCRAPE_DAYS_BEFORE = 1;
+const DEFAULT_SCRAPE_EXTRA_AHEAD = 14;
+
+function resolveScrapeRange(explicit: FetchRange | undefined, base: FetchRange): FetchRange {
+  return explicit ?? expandFetchRange(base, DEFAULT_SCRAPE_DAYS_BEFORE, DEFAULT_SCRAPE_EXTRA_AHEAD);
+}
+
 export async function orchestrateMatches(options: OrchestratorOptions): Promise<OrchestratorResult> {
   const scrapeProvider = new ScrapeProvider();
+  const scrapeRange = resolveScrapeRange(options.scrapeFetchRange, options.primaryRange);
   const sourcePromises: Array<Promise<SourceFetchResult>> = [
     runOne(
       'football-data',
@@ -156,7 +167,7 @@ export async function orchestrateMatches(options: OrchestratorOptions): Promise<
     sourcePromises.push(
       runOne(
         'scrape',
-        () => scrapeProvider.fetch(options.primaryRange),
+        () => scrapeProvider.fetch(scrapeRange),
         options.scrapeTimeoutMs,
         options.sourceRetryCount,
         'scrape'
@@ -192,10 +203,12 @@ export async function orchestrateMatches(options: OrchestratorOptions): Promise<
       ),
     ];
     if (options.enableScraping) {
+      const fbBase = options.fallbackRange as FetchRange;
+      const fbScrape = resolveScrapeRange(options.scrapeFallbackFetchRange, fbBase);
       fallbackRuns.push(
         runOne(
           'scrape-fallback',
-          () => scrapeProvider.fetch(options.fallbackRange as FetchRange),
+          () => scrapeProvider.fetch(fbScrape),
           options.scrapeTimeoutMs,
           options.sourceRetryCount,
           'scrape'
@@ -220,6 +233,8 @@ export async function orchestrateMatches(options: OrchestratorOptions): Promise<
       primaryTo: options.primaryRange.to,
       fallbackFrom: options.fallbackRange?.from,
       fallbackTo: options.fallbackRange?.to,
+      scrapeFetchFrom: scrapeRange.from,
+      scrapeFetchTo: scrapeRange.to,
     },
   };
 

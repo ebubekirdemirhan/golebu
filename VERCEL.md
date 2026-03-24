@@ -17,6 +17,9 @@
 | `MAX_SECONDARY` | (İsteğe bağlı) API-Football için ayrılan slot. Varsayılan `8`. |
 | `MAX_SCRAPE` | (İsteğe bağlı) ESPN lig bazlı scrape kotası; `MAX_MATCHES` içinde football-data ve API-Football sonrası kalan pay. Varsayılan `35`. |
 | `SCRAPE_LEAGUES` | (İsteğe bağlı) Virgülle ESPN slug’lar (`eng.1`, `tur.1`, `uefa.champions`, …). Boşsa ~20 liglik varsayılan liste kullanılır. |
+| `SCRAPE_INCLUDE_PAST_DAYS` | (İsteğe bağlı) ESPN çekiminde `MATCH_DAYS_AHEAD` başlangıcına ek gün geri. Varsayılan `1`. |
+| `SCRAPE_EXTRA_DAYS_AHEAD` | (İsteğe bağlı) ESPN çekiminde bitişe ek gün (sıradaki hafta sonu maçları için). Varsayılan `14`. |
+| `MATCH_DAYS_AHEAD` | Çok düşük (1–2) tutulursa çoğu ligde sıradaki maç pencere dışında kalabilir; ESPN için yine de `SCRAPE_EXTRA_DAYS_AHEAD` ile genişletme uygulanır. |
 | `ENABLE_SCRAPING` | (İsteğe bağlı) Scrape fallback aktif/pasif (`true/false`). Varsayılan `true`. |
 | `SOURCE_TIMEOUT_MS` | (İsteğe bağlı) Kaynak başına timeout (ms). Varsayılan `9000`. |
 | `SOURCE_RETRY_COUNT` | (İsteğe bağlı) Kaynak hata olursa tekrar deneme sayısı. Varsayılan `2`. |

@@ -13,7 +13,8 @@ interface Props {
   diagnostics?: MatchDiagnostics;
 }
 
-const FREE_LIMIT = 2;
+/** Girişsiz görünen kart sayısı (kilitli olanlar aşağıda kalır) */
+const FREE_LIMIT = 5;
 
 const LEAGUE_FILTERS = ['Tümü', ...ALL_LEAGUE_FILTERS.map((l) => l.filterLabel)];
 
@@ -66,7 +67,10 @@ export default function MatchesSection({ analyses, diagnostics }: Props) {
         ))}
       </div>
       <p className="text-[10px] text-gray-500 mt-2">
-        Aralık: {diagnostics.range.primaryFrom} → {diagnostics.range.primaryTo}
+        API aralığı: {diagnostics.range.primaryFrom} → {diagnostics.range.primaryTo}
+        {diagnostics.range.scrapeFetchFrom && diagnostics.range.scrapeFetchTo
+          ? ` • ESPN çekimi: ${diagnostics.range.scrapeFetchFrom} → ${diagnostics.range.scrapeFetchTo}`
+          : ''}
         {diagnostics.range.fallbackFrom && diagnostics.range.fallbackTo
           ? ` • fallback: ${diagnostics.range.fallbackFrom} → ${diagnostics.range.fallbackTo}`
           : ''}
@@ -111,7 +115,9 @@ export default function MatchesSection({ analyses, diagnostics }: Props) {
         {filtered.length} analiz gösteriliyor
         {filter !== 'Tümü' && ` • ${filter}`}
         {mounted && status !== 'loading' && !isPremium && filtered.length > FREE_LIMIT && (
-          <span className="text-purple-400 ml-1">• {FREE_LIMIT} ücretsiz, geri kalanı Premium</span>
+          <span className="text-purple-400 ml-1">
+            • İlk {FREE_LIMIT} ücretsiz; +{filtered.length - FREE_LIMIT} maç Premium
+          </span>
         )}
       </p>
 

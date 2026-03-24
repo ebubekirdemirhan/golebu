@@ -90,7 +90,11 @@ function normalizeEspnEvent(event: EspnEvent, cfg: EspnLeagueConfig): Match | nu
 }
 
 function inRange(iso: string, range: FetchRange): boolean {
-  return iso >= `${range.from}T00:00:00.000Z` && iso <= `${range.to}T23:59:59.999Z`;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return false;
+  const start = new Date(`${range.from}T00:00:00.000Z`).getTime();
+  const end = new Date(`${range.to}T23:59:59.999Z`).getTime();
+  return t >= start && t <= end;
 }
 
 const UA =
