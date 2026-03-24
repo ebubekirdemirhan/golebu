@@ -104,6 +104,8 @@ export interface Analysis {
 
   /** Tam istatistik (football-data) vs tahmini model (ikincil kaynak) */
   statsQuality?: 'full' | 'estimated' | 'demo';
+  /** Analizin üretildiği maç kaynağı (UI’da tahmini uyarı metni için) */
+  dataSource?: MatchDataSource;
 }
 
 export interface AnalysisResult {

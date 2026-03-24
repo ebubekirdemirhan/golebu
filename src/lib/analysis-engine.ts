@@ -295,6 +295,7 @@ export function generateAnalysis(
       homeTeamFavorite: context?.homeTeamFavorite ?? '-',
       awayTeamFavorite: context?.awayTeamFavorite ?? '-',
     },
+    dataSource: match.dataSource ?? 'football-data',
     statsQuality: 'full',
   };
 }

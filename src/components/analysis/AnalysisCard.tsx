@@ -1,6 +1,6 @@
 'use client';
 
-import { Analysis } from '@/lib/types';
+import { Analysis, type MatchDataSource } from '@/lib/types';
 import { getLeagueFlag } from '@/lib/utils';
 import GoalTrend from './GoalTrend';
 import StatBadge from './StatBadge';
@@ -25,6 +25,13 @@ const confidenceBorder: Record<string, string> = {
   'Yüksek': 'border-green-500/30',
   'Çok Yüksek': 'border-purple-500/40',
 };
+
+function estimatedSourceLabel(ds?: MatchDataSource): string {
+  if (ds === 'scrape') return 'ESPN (web skorboard) fikstürü';
+  if (ds === 'api-football') return 'API-Football ikincil kaynağı';
+  if (ds === 'football-data') return 'football-data (sınırlı örneklem)';
+  return 'ikincil / sınırlı veri kaynağı';
+}
 
 export default function AnalysisCard({ analysis, showTrend = true }: Props) {
   const flag = getLeagueFlag(analysis.competition.code);
@@ -57,8 +64,9 @@ export default function AnalysisCard({ analysis, showTrend = true }: Props) {
       {analysis.statsQuality === 'estimated' && (
         <div className="mx-4 mb-2 rounded-lg bg-amber-500/10 border border-amber-500/25 px-3 py-2">
           <p className="text-amber-200/90 text-[11px] leading-snug">
-            <span className="font-semibold text-amber-300">Tahmini analiz:</span> Bu maç ikincil veri kaynağından (API-Football).
-            Son maç / gol trendi gerçek istatistik değil; model üretimidir.
+            <span className="font-semibold text-amber-300">Tahmini analiz:</span>{' '}
+            Bu maç {estimatedSourceLabel(analysis.dataSource)} üzerinden işlendi. Son maç / gol trendi gerçek istatistik değil;
+            model üretimidir.
           </p>
         </div>
       )}
